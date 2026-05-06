@@ -369,8 +369,13 @@
         </select>
         <div class="prompt-output" id="promptOutput">尚未生成…</div>
         <div class="copy-row">
-          <button class="primary" id="copyBtn">📋 複製</button>
+          <button class="primary" id="copyBtn">📋 複製英文</button>
           <button id="copyWithNeg">含負面詞</button>
+        </div>
+        <h3 style="margin-top:1rem;font-size:.85rem">📝 中文版</h3>
+        <div class="prompt-output" id="promptOutputZh" style="margin-top:.3rem">尚未生成…</div>
+        <div class="copy-row">
+          <button class="primary" id="copyZhBtn">📋 複製中文版</button>
         </div>
         <h3 style="margin-top:1rem;font-size:.85rem">⛔ 負面詞 (Negative)</h3>
         <textarea class="negative-area" id="negativeText">low quality, worst quality, bad anatomy, blurry, distorted</textarea>
@@ -383,7 +388,7 @@
     </aside>
   </main>
 
-  <footer>v0.2 · 61 fields · 1300+ tags · 純 HTML/CSS/JS</footer>
+  <footer>v0.3 · 61 fields · 1300+ tags · 中英雙輸出 · 純 HTML/CSS/JS</footer>
   <div class="toast" id="toast">已複製</div>
 
   <script>
@@ -467,6 +472,18 @@
       standard: ["safe", "standard"],
       nsfw:     ["safe", "standard", "nsfw"]
     };
+
+    // ============ 英→中 對照表（自動由 FIELDS 產生）============
+    const ZH_BY_EN = (() => {
+      const map = {};
+      FIELDS.forEach(f => {
+        if (!f.options) return;
+        f.options.forEach(o => { if (o && o.en) map[o.en] = o.zh; });
+      });
+      return map;
+    })();
+    const z = en => (en == null ? "" : (ZH_BY_EN[en] || en));
+    const zArr = arr => (arr || []).map(z);
 
     // ============ 狀態 ============
     let state = {
@@ -737,9 +754,100 @@
       return "";
     }
 
+    function buildPromptZh() {
+      const v = gather();
+      const personDesc = [v.age, v.race, v.gender].filter(Boolean).map(z).join("");
+      const bodyDesc   = [v.height, v.build, ...v.measurements].filter(Boolean).map(z).join("、");
+      const appearance = zArr(v.appearance).join("、");
+      const clothing   = zArr(v.clothing).join("、");
+      const action     = zArr(v.action).join("、");
+      const scene      = zArr(v.scene).join("、");
+      const sceneDetail= zArr(v.sceneDetail).join("、");
+      const camera     = zArr(v.camera).join("、");
+      const style      = zArr(v.style).join("、");
+      const lighting   = z(v.lighting);
+      const profession = z(v.profession || "");
+      const shot       = z(v.shot || "");
+
+      switch (state.template) {
+        case "midjourney":
+        case "sd_a1111":
+        case "nai": {
+          const parts = [
+            style || "寫實風格",
+            camera,
+            `${shot || "人像"} 拍攝 ${v.name}`,
+            personDesc ? `，一位${personDesc}` : "",
+            profession ? `，職業 ${profession}` : "",
+            appearance ? `，${appearance}` : "",
+            bodyDesc ? `，體型：${bodyDesc}` : "",
+            clothing ? `，穿著 ${clothing}` : "",
+            action ? `，${action}` : "",
+            scene ? `，場景：${scene}` : "",
+            sceneDetail ? `，${sceneDetail}` : "",
+            lighting ? `，光線：${lighting}` : ""
+          ].filter(Boolean);
+          return parts.join("") + (v.ratio ? ` 圖片比例：${v.ratio}` : "");
+        }
+        case "sora": {
+          return `${shot || "中景"} 電影感影片：${v.name}` +
+                 `${personDesc ? `，一位${personDesc}` : ""}` +
+                 `${appearance ? `，${appearance}` : ""}` +
+                 `${clothing ? `，穿著 ${clothing}` : ""}。` +
+                 `${action ? `角色正在 ${action}。` : ""}` +
+                 `場景：${scene || "安靜空間"}${sceneDetail ? `、${sceneDetail}` : ""}，${lighting || "自然光"}。` +
+                 `鏡頭：${camera || "標準 50mm 平視"}。` +
+                 `風格：${style || "電影感"}。` +
+                 `約 6 秒，平穩手持運鏡，24fps。`;
+        }
+        case "elevenlabs": {
+          return `語音設定 — ${z(v.age) || "成年"} ${z(v.gender) || "人物"}` +
+                 `${v.race ? `，${z(v.race)} 口音` : ""}。` +
+                 `語氣：${z(v.expressionRaw) || "中性"}，溫暖對話式。` +
+                 `場景：${scene || "室內環境"}。` +
+                 `範例台詞：「你好，我是 ${v.name}。${profession ? `我的職業是${profession}。` : ""}」`;
+        }
+        case "character_card": {
+          const lines = [
+            `# 角色名稱：${v.name}`,
+            `## 基本資料`,
+            `- 性別：${z(v.gender) || "未設定"}`,
+            `- 年齡：${z(v.age) || "未設定"}`,
+            `- 種族/國籍：${z(v.race) || "未設定"}`,
+            `- 體型：${[z(v.height), z(v.build)].filter(Boolean).join("、") || "未設定"}`,
+            `- 職業：${profession || "未設定"}`,
+            v.measurements.length ? `- 三圍：${zArr(v.measurements).join("、")}` : null,
+            ``,
+            `## 外貌`,
+            appearance ? `- ${appearance}` : `- (未設定)`,
+            ``,
+            `## 穿著`,
+            clothing ? `- ${clothing}` : `- (未設定)`,
+            ``,
+            `## 當前狀態 / 場景`,
+            action ? `- 動作：${action}` : null,
+            scene ? `- 場景：${scene}` : null,
+            sceneDetail ? `- 場景細節：${sceneDetail}` : null,
+            lighting ? `- 光線：${lighting}` : null,
+            ``,
+            `## 鏡頭與風格`,
+            camera ? `- 鏡頭：${camera}` : null,
+            style ? `- 風格：${style}` : null,
+            ``,
+            `## 角色扮演指令`,
+            `請以這位角色的身份回應使用者，保持人格一致、外貌與背景設定不變。`
+          ].filter(l => l !== null);
+          return lines.join("\n");
+        }
+      }
+      return "";
+    }
+
     function renderPrompt() {
       const out = buildPrompt();
       document.getElementById("promptOutput").textContent = out || "(請選擇選項)";
+      const outZh = buildPromptZh();
+      document.getElementById("promptOutputZh").textContent = outZh || "(請選擇選項)";
     }
 
     // ============ 快捷功能 ============
@@ -869,6 +977,14 @@
         pushHistory(p);
       });
     }
+    function copyZh() {
+      const p = buildPromptZh();
+      if (!p) { toast("⚠️ 沒有內容"); return; }
+      navigator.clipboard.writeText(p).then(() => {
+        toast("📋 已複製中文版");
+        pushHistory(p);
+      });
+    }
 
     function toast(msg) {
       const t = document.getElementById("toast");
@@ -916,6 +1032,7 @@
     };
     document.getElementById("copyBtn").onclick = () => copy(false);
     document.getElementById("copyWithNeg").onclick = () => copy(true);
+    document.getElementById("copyZhBtn").onclick = copyZh;
     document.getElementById("clearHistory").onclick = (e) => {
       e.stopPropagation();
       history = [];
