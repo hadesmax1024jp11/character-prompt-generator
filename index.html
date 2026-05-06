@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色提示詞產生器 v0</title>
+  <style>
+    :root {
+      --bg: #0f1422;
+      --bg-elev: #1a2138;
+      --bg-card: #131a2e;
+      --border: #2a3556;
+      --text: #e5e9f5;
+      --text-dim: #8b95b7;
+      --primary: #4a8eff;
+      --accent: #6dd3a4;
+      --danger: #ff5c7a;
+      --warning: #ffbb44;
+    }
+    [data-theme="light"] {
+      --bg: #f5f7fb;
+      --bg-elev: #ffffff;
+      --bg-card: #f0f3fa;
+      --border: #d8def0;
+      --text: #1a1f33;
+      --text-dim: #5a6280;
+      --primary: #2c5fb8;
+      --accent: #2a9d6e;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .2s, color .2s;
+    }
+    header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: var(--bg-elev);
+    }
+    .logo h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .logo p { margin: .2rem 0 0; color: var(--text-dim); font-size: .85rem; }
+    .toolbar { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    button {
+      background: var(--bg-elev);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: .5rem .9rem;
+      border-radius: .5rem;
+      cursor: pointer;
+      font-size: .85rem;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    button:hover { border-color: var(--primary); }
+    button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button.danger-btn { background: transparent; color: var(--danger); border-color: var(--danger); }
+    .safety-group {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      overflow: hidden;
+    }
+    .safety-group button {
+      border: none;
+      border-radius: 0;
+      border-right: 1px solid var(--border);
+      padding: .45rem .8rem;
+      background: transparent;
+      font-size: .8rem;
+    }
+    .safety-group button:last-child { border-right: none; }
+    .safety-group button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+    }
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+      .side { position: static !important; max-height: none !important; }
+    }
+    .panel {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: .8rem;
+      overflow: hidden;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+      user-select: none;
+      white-space: nowrap;
+      font-size: .9rem;
+    }
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: var(--bg-elev);
+    }
+    .tab-content {
+      padding: 1.5rem;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: .6rem;
+      margin: 0 0 1.2rem;
+      padding: 1rem 1.2rem;
+    }
+    legend {
+      padding: 0 .5rem;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: .95rem;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .field label {
+      display: block;
+      font-size: .8rem;
+      color: var(--text-dim);
+      margin-bottom: .35rem;
+    }
+    .field select, .field input {
+      width: 100%;
+      padding: .5rem .7rem;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: .4rem;
+      font-size: .85rem;
+      font-family: inherit;
+    }
+    .field select:focus, .field input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .field .custom-input {
+      margin-top: .35rem;
+      font-size: .8rem;
+    }
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+    }
+    .side-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: .8rem;
+      padding: 1rem;
+    }
+    .side-card h3 {
+      margin: 0 0 .8rem;
+      font-size: .95rem;
+      color: var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+    }
+    .prompt-output {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      padding: .8rem;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: .82rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 80px;
+      max-height: 220px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .copy-row {
+      display: flex;
+      gap: .4rem;
+      margin-top: .5rem;
+    }
+    .copy-row button { flex: 1; }
+    .history-item {
+      padding: .6rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: .4rem;
+      margin-bottom: .5rem;
+      font-size: .75rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      max-height: 60px;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+    .history-item:hover { border-color: var(--primary); color: var(--text); }
+    footer {
+      text-align: center;
+      padding: 1.2rem;
+      color: var(--text-dim);
+      font-size: .8rem;
+      border-top: 1px solid var(--border);
+    }
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      padding: .7rem 1.4rem;
+      border-radius: 2rem;
+      font-size: .85rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s, transform .25s;
+      z-index: 999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-10px);
+    }
+    .negative-area {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      padding: .55rem;
+      margin-top: .35rem;
+      width: 100%;
+      color: var(--text);
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: .8rem;
+      min-height: 60px;
+      resize: vertical;
+    }
+    .bookmark-row {
+      display: flex;
+      gap: .4rem;
+      margin-bottom: .5rem;
+    }
+    .bookmark-row input, .bookmark-row select { flex: 1; }
+    .template-select {
+      width: 100%;
+      margin-bottom: .8rem;
+      padding: .5rem .7rem;
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: .4rem;
+      font-family: inherit;
+      font-size: .85rem;
+    }
+    .empty-tip {
+      color: var(--text-dim);
+      font-size: .85rem;
+      padding: 2rem;
+      text-align: center;
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+  </style>
+</head>
+<body data-theme="dark">
+  <header>
+    <div class="logo">
+      <h1>🎨 角色提示詞產生器</h1>
+      <p>v0.2 — AI 繪圖／影片／語音／角色卡 Prompt 工廠</p>
+    </div>
+    <div class="toolbar">
+      <button id="themeBtn">🌙 深色</button>
+      <div class="safety-group" id="safetyGroup">
+        <button data-safety="safe" class="active">清純 Safe</button>
+        <button data-safety="standard">標準 Std</button>
+        <button data-safety="nsfw">NSFW</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="tabs" id="tabs"></div>
+      <div class="tab-content" id="tabContent"></div>
+    </div>
+
+    <aside class="side">
+      <div class="side-card">
+        <h3>📚 個人書籤</h3>
+        <div class="bookmark-row">
+          <input id="bookmarkName" placeholder="書籤名稱..." />
+          <button class="primary" id="saveBookmark">儲存</button>
+        </div>
+        <div class="bookmark-row">
+          <select id="bookmarkSelect"><option value="">-- 選擇書籤 --</option></select>
+          <button id="loadBookmark">載入</button>
+          <button class="danger-btn" id="deleteBookmark" title="刪除">🗑</button>
+        </div>
+        <div class="bookmark-row">
+          <button id="exportJson" style="flex:1">⬇ 匯出</button>
+          <button id="importJsonBtn" style="flex:1">⬆ 匯入</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" />
+        </div>
+      </div>
+
+      <div class="side-card">
+        <h3>⚡ 快捷</h3>
+        <div class="quick-actions">
+          <button id="clearBtn">🧹 清除</button>
+          <button id="randomBtn">🎲 隨機</button>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <h3>📝 提示詞輸出</h3>
+        <select class="template-select" id="templateSelect">
+          <option value="midjourney">Midjourney 風格</option>
+          <option value="sd_a1111">Stable Diffusion (A1111)</option>
+          <option value="nai">NovelAI / NAI</option>
+          <option value="sora">Sora 影片</option>
+          <option value="elevenlabs">ElevenLabs 語音</option>
+          <option value="character_card">LLM 角色卡 (中文)</option>
+        </select>
+        <div class="prompt-output" id="promptOutput">尚未生成…</div>
+        <div class="copy-row">
+          <button class="primary" id="copyBtn">📋 複製</button>
+          <button id="copyWithNeg">含負面詞</button>
+        </div>
+        <h3 style="margin-top:1rem;font-size:.85rem">⛔ 負面詞 (Negative)</h3>
+        <textarea class="negative-area" id="negativeText">low quality, worst quality, bad anatomy, blurry, distorted</textarea>
+      </div>
+
+      <div class="side-card">
+        <h3>🕓 歷史紀錄 <button class="danger-btn" id="clearHistory" style="font-size:.7rem;padding:.25rem .55rem">清除</button></h3>
+        <div id="historyList"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>v0.2 · 61 fields · 1300+ tags · 純 HTML/CSS/JS</footer>
+  <div class="toast" id="toast">已複製</div>
+
+  <script>
+    // ============ 資料定義 ============
+    // safety: safe (所有都看得到) | standard (Std/NSFW 才看得到) | nsfw (僅 NSFW)
+    const FIELDS = [
+      { tab: "character", group: "人物設定", key: "name", label: "人物名稱 (Name)", type: "text", default: "Protagonist", placeholder: "Aria / 阿雅..." },
+      { tab: "character", group: "人物設定", key: "gender", label: "性別 (Gender)", safety: "safe", options: [{ zh: "女性", en: "female" }, { zh: "男性", en: "male" }, { zh: "中性", en: "androgynous" }] },
+      { tab: "character", group: "人物設定", key: "race", label: "種族/國籍 (Race)", safety: "safe", options: [{ zh: "台灣", en: "Taiwanese" }, { zh: "日本", en: "Japanese" }, { zh: "韓國", en: "Korean" }, { zh: "香港", en: "Hong Kong" }, { zh: "中國", en: "Chinese" }, { zh: "東亞", en: "East Asian" }, { zh: "泰國", en: "Thai" }, { zh: "印度", en: "Indian" }, { zh: "混血", en: "mixed race" }, { zh: "阿拉伯", en: "Arab" }, { zh: "波斯", en: "Persian" }, { zh: "以色列", en: "Israeli" }, { zh: "美國", en: "American" }, { zh: "英國", en: "British" }, { zh: "法國", en: "French" }, { zh: "德國", en: "German" }, { zh: "義大利", en: "Italian" }, { zh: "西班牙", en: "Spanish" }, { zh: "希臘", en: "Greek" }, { zh: "俄羅斯", en: "Russian" }, { zh: "烏克蘭", en: "Ukrainian" }, { zh: "瑞典", en: "Swedish" }, { zh: "挪威", en: "Norwegian" }, { zh: "丹麥", en: "Danish" }, { zh: "拉丁裔", en: "Latina" }, { zh: "非裔", en: "African American" }, { zh: "精靈", en: "elf" }, { zh: "獸人", en: "beastkin" }] },
+      { tab: "character", group: "人物設定", key: "age", label: "年齡 (Age)", safety: "safe", options: [{ zh: "Baby", en: "baby" }, { zh: "3歲", en: "3 years old" }, { zh: "5歲", en: "5 years old" }, { zh: "8歲", en: "8 years old" }, { zh: "10歲", en: "10 years old" }, { zh: "12歲", en: "12 years old" }, { zh: "15歲", en: "15 years old" }, { zh: "18歲", en: "18 years old" }, { zh: "20歲初", en: "in early 20s" }, { zh: "22歲", en: "22 years old" }, { zh: "25歲左右", en: "in mid 20s" }, { zh: "28-30歲", en: "in late 20s" }, { zh: "30+ 輕熟", en: "in early 30s" }, { zh: "中年", en: "middle-aged" }, { zh: "老年", en: "elderly" }] },
+      { tab: "character", group: "人物設定", key: "height", label: "身高 (Height)", safety: "safe", options: [{ zh: "標準身高", en: "average height" }, { zh: "嬌小可愛", en: "petite" }, { zh: "高挑模特", en: "tall" }, { zh: "極高", en: "towering" }] },
+      { tab: "character", group: "人物設定", key: "build", label: "體態 (Type)", safety: "safe", options: [{ zh: "骨感纖細", en: "slender and bony" }, { zh: "纖細曼妙", en: "slim and athletic" }, { zh: "勻稱健美", en: "well-proportioned figure" }, { zh: "豐滿圓潤", en: "full-figured" }, { zh: "微胖", en: "chubby" }, { zh: "初階健身", en: "lean toned physique" }, { zh: "健美壯碩", en: "muscular build" }] },
+      { tab: "character", group: "人物設定", key: "profession", label: "職業 (Profession)", safety: "safe", options: [{ zh: "瑜伽老師", en: "yoga instructor" }, { zh: "心理諮商師", en: "psychological counselor" }, { zh: "電商企劃", en: "e-commerce planner" }, { zh: "活動企劃", en: "event planner" }, { zh: "護理師", en: "registered nurse" }, { zh: "牙醫助理", en: "dental assistant" }, { zh: "藥劑師", en: "pharmacist" }, { zh: "律師", en: "lawyer" }, { zh: "職業軍人", en: "professional soldier" }, { zh: "警察/刑警", en: "police officer" }, { zh: "社群小編/網紅", en: "social media influencer" }, { zh: "室內設計師", en: "interior designer" }, { zh: "自由插畫家", en: "freelance illustrator" }, { zh: "攝影師", en: "professional photographer" }, { zh: "髮型設計師", en: "hair stylist" }, { zh: "咖啡師", en: "barista" }, { zh: "甜點師", en: "pastry chef" }, { zh: "花藝師", en: "floral designer" }, { zh: "國文老師", en: "Chinese literature teacher" }, { zh: "英文老師", en: "English teacher" }, { zh: "幼稚園老師", en: "kindergarten teacher" }, { zh: "學生", en: "school student" }, { zh: "青梅竹馬", en: "childhood friend" }, { zh: "行政秘書", en: "receptionist" }, { zh: "會計", en: "accountant" }, { zh: "服飾店店員", en: "fashion retail associate" }, { zh: "精品櫃姐", en: "luxury retail advisor" }, { zh: "空服員", en: "flight attendant" }, { zh: "工人", en: "blue-collar worker" }, { zh: "大小姐", en: "ojousama" }, { zh: "女僕", en: "maid" }, { zh: "啦啦隊長", en: "cheerleader" }, { zh: "修女", en: "nun" }, { zh: "巫女", en: "miko" }, { zh: "魔法少女", en: "magical girl" }, { zh: "公主", en: "princess" }, { zh: "芭蕾舞者", en: "ballerina" }, { zh: "中國殭屍", en: "jiangshi" }, { zh: "殭屍", en: "zombie" }, { zh: "遊俠", en: "ranger" }, { zh: "法師", en: "mage" }, { zh: "召喚師", en: "summoner" }, { zh: "詩人", en: "bard" }, { zh: "舞孃", en: "dancer" }, { zh: "商人", en: "merchant" }], custom: true },
+      { tab: "character", group: "三圍 (Std/NSFW)", key: "bust", label: "胸圍 (Bust)", safety: "standard", options: [{ zh: "A罩杯", en: "small chest A cup" }, { zh: "B罩杯", en: "medium chest B cup" }, { zh: "C罩杯", en: "C cup chest" }, { zh: "D罩杯", en: "large chest D cup" }, { zh: "E罩杯", en: "E cup voluptuous" }, { zh: "F罩杯", en: "F cup oppai" }] },
+      { tab: "character", group: "三圍 (Std/NSFW)", key: "waist", label: "腰圍 (Waist)", safety: "standard", options: [{ zh: "螞蟻腰", en: "wasp waist" }, { zh: "纖細", en: "slim waist" }, { zh: "馬甲線", en: "toned waist" }, { zh: "標準", en: "natural waist" }, { zh: "水桶腰", en: "thick waist" }] },
+      { tab: "character", group: "三圍 (Std/NSFW)", key: "hip", label: "臀圍 (Hip)", safety: "standard", options: [{ zh: "窄臀纖腿", en: "narrow hips" }, { zh: "標準", en: "proportional hips" }, { zh: "S型曲線", en: "curvy hips" }, { zh: "蜜大腿", en: "thick thighs" }, { zh: "寬臀", en: "wide hips" }] },
+      { tab: "character", group: "頭髮", key: "hair_style", label: "髮型 (Style)", safety: "safe", options: [{ zh: "長直髮", en: "long straight hair" }, { zh: "微波浪長髮", en: "long hair with messy waves" }, { zh: "柔亮大波浪", en: "glossy long wavy hair" }, { zh: "齊瀏海長髮", en: "sleek long hair with blunt bangs" }, { zh: "側分復古波浪", en: "glamorous side-parted vintage waves" }, { zh: "中分直髮", en: "middle-parted straight hair" }, { zh: "大波浪捲", en: "loose waves" }, { zh: "浪漫大波浪", en: "beach waves" }, { zh: "陶瓷燙", en: "perm hair" }, { zh: "平安姬", en: "Heian princess hair" }, { zh: "銀色長直", en: "long silver hair" }, { zh: "過膝超長髮", en: "floor length hair" }, { zh: "中長層次中分", en: "medium layered hair with center part" }, { zh: "中長直髮齊瀏海", en: "medium straight hair with bangs" }, { zh: "狼尾層次", en: "medium length wolf cut" }, { zh: "法式微亂捲", en: "French style medium length messy curls" }, { zh: "自然層次", en: "medium length natural layered cut" }, { zh: "慵懶捲髮", en: "messy curly hair" }, { zh: "內彎髮尾", en: "C-curl perm ends" }, { zh: "日系微捲", en: "Japanese soft wavy hair" }, { zh: "韓式中長", en: "Korean medium-length hair" }, { zh: "及肩鮑伯", en: "shoulder-length lob" }, { zh: "層次碎髮", en: "shaggy cut" }, { zh: "空氣感短鮑伯", en: "airy short bob cut" }, { zh: "短直髮", en: "short straight hair" }, { zh: "深側分短直", en: "deep side part short straight hair" }, { zh: "齊瀏海妹妹頭", en: "short hair with blunt bangs" }, { zh: "蓬鬆短髮", en: "fluffy layered short hair" }, { zh: "精靈短髮", en: "pixie cut" }, { zh: "短髮造型", en: "short hair" }, { zh: "經典鮑伯", en: "classic bob cut" }, { zh: "長鬢角短髮", en: "side long strands" }, { zh: "厚重西瓜頭", en: "thick bowl cut" }, { zh: "高馬尾", en: "high ponytail" }, { zh: "低馬尾", en: "low ponytail" }, { zh: "優雅盤髮", en: "updo" }, { zh: "側馬尾", en: "side ponytail" }, { zh: "雙馬尾", en: "twintails" }, { zh: "麻花辮", en: "braids" }, { zh: "丸子頭", en: "bun" }, { zh: "法式編髮", en: "French braid" }, { zh: "隨興丸子頭", en: "messy bun" }, { zh: "公主半紮", en: "half up half down" }, { zh: "髒髒辮", en: "cornrows" }, { zh: "螺旋雙馬尾", en: "drill pigtails" }, { zh: "團子頭", en: "odango hair" }, { zh: "繫帶雙馬尾", en: "braided twin tails" }, { zh: "三馬尾", en: "triple ponytails" }, { zh: "薄瀏海", en: "thin see-through bangs" }, { zh: "齊薄瀏海", en: "thin blunt bangs" }, { zh: "姬髮式", en: "hime cut" }, { zh: "遮眼瀏海", en: "hair over eyes" }, { zh: "韓式瀏海", en: "Korean bangs" }, { zh: "側分瀏海", en: "side-parted bangs" }, { zh: "空氣瀏海", en: "air bangs" }, { zh: "斜瀏海", en: "side swept bangs" }, { zh: "八字瀏海", en: "curtain bangs" }, { zh: "呆毛", en: "ahoge" }, { zh: "交叉瀏海", en: "crossed bangs" }, { zh: "微分碎蓋", en: "textured crop with fringe" }, { zh: "美式前刺", en: "spiky front hair" }, { zh: "三七側分", en: "7-3 side part hair" }, { zh: "潮男背頭", en: "slicked-back undercut" }, { zh: "摩根紋理燙", en: "Morgan perm" }, { zh: "韓式紋理燙", en: "Korean textured perm" }, { zh: "寸頭", en: "buzz cut" }, { zh: "二八短側分", en: "2-8 short side part" }, { zh: "韓系捲髮", en: "Korean curly hair" }, { zh: "休閒側分", en: "casual side part" }, { zh: "爆炸頭", en: "afro" }, { zh: "莫霍克", en: "mohawk" }, { zh: "反重力刺蝟頭", en: "spiky hair" }, { zh: "貓耳髮型", en: "nekomimi style" }, { zh: "愛心型髮束", en: "heart shaped intake" }, { zh: "狂放凌亂碎髮", en: "wild messy hair" }], custom: true },
+      { tab: "character", group: "頭髮", key: "hair_color", label: "髮色與挑染 (Color & Dye)", safety: "safe", options: [{ zh: "黑色", en: "black hair" }, { zh: "深棕", en: "dark brown hair" }, { zh: "淺棕", en: "light brown hair" }, { zh: "淺金灰", en: "ash blonde hair" }, { zh: "金色", en: "blonde hair" }, { zh: "白金", en: "platinum blonde hair" }, { zh: "銀色", en: "silver hair" }, { zh: "白色", en: "white hair" }, { zh: "紅色", en: "red hair" }, { zh: "粉紅", en: "pink hair" }, { zh: "紫色", en: "purple hair" }, { zh: "藍色", en: "blue hair" }, { zh: "漸層染", en: "ombre hair" }, { zh: "柔和漸層", en: "sombre hair" }, { zh: "法式畫兒染", en: "balayage" }, { zh: "霧面霜染", en: "frosting hair" }, { zh: "區塊挑染", en: "bold streaks" }, { zh: "細線條染", en: "babylights" }, { zh: "對半染", en: "split dye" }, { zh: "觸角染", en: "money piece" }, { zh: "耳圈染", en: "ear-loop highlights" }, { zh: "隱藏染", en: "underlights" }, { zh: "裙擺染", en: "dip dye" }, { zh: "臭鼬染", en: "skunk stripe hair" }, { zh: "彩虹挑染", en: "rainbow highlights" }, { zh: "全息幻彩", en: "holographic hair" }, { zh: "像素染", en: "pixel hair" }, { zh: "光頭", en: "bald" }, { zh: "寸頭", en: "buzz cut hair" }] },
+      { tab: "character", group: "皮膚", key: "skin", label: "膚質 (Skin)", safety: "safe", options: [{ zh: "白皙自然", en: "fair skin" }, { zh: "小麥色", en: "tan skin" }, { zh: "真實感", en: "realistic skin" }, { zh: "自然膚色", en: "natural skin tone" }] },
+      { tab: "character", group: "皮膚", key: "tattoo", label: "紋身 (Tattoo)", safety: "safe", options: [{ zh: "傳統日式刺青", en: "irezumi tattoo" }, { zh: "微刺青", en: "minimalist tattoo" }, { zh: "幾何圖形", en: "geometric tribal tattoo" }, { zh: "玫瑰花紋", en: "floral rose tattoo" }, { zh: "龍紋身", en: "dragon tattoo" }, { zh: "蝴蝶紋身", en: "butterfly tattoo" }, { zh: "賽博龐克發光", en: "neon cyberpunk tattoo" }] },
+      { tab: "character", group: "臉部表情", key: "expression", label: "臉部表情 (Expression)", safety: "safe", options: [{ zh: "可愛噘嘴", en: "adorable pout" }, { zh: "可愛眨眼", en: "cute wink" }, { zh: "甜美微笑", en: "sweet smile" }, { zh: "俏皮吐舌", en: "playful tongue out" }, { zh: "明亮眼神", en: "sparkling eyes" }, { zh: "月牙笑眼", en: "crescent smiling eyes" }, { zh: "遮臉害羞", en: "shy peek-a-boo eyes" }, { zh: "頑皮咧嘴", en: "cheeky grin" }, { zh: "可愛腮紅", en: "kawaii blush" }, { zh: "小狗眼", en: "puppy eyes" }, { zh: "天真凝視", en: "innocent stare" }, { zh: "夢幻表情", en: "dreamy expression" }, { zh: "傻氣臉", en: "silly face" }, { zh: "害羞腮紅", en: "shy blush" }, { zh: "溫柔微笑", en: "gentle smile" }, { zh: "梨渦淺笑", en: "sweet smile with dimples" }, { zh: "羞澀靦腆", en: "shy smile" }, { zh: "溫暖笑容", en: "heartwarming grin" }, { zh: "光彩煥發", en: "radiant glow" }, { zh: "愉快幸福", en: "cheerful bliss" }, { zh: "開懷大笑", en: "heartfelt laughter" }, { zh: "微露齒笑", en: "smile with teeth" }, { zh: "嘟嘴", en: "pouting" }, { zh: "嚴肅", en: "serious expression" }, { zh: "深情對視", en: "deep gaze" }, { zh: "眼神離開", en: "looking away" }, { zh: "向上仰望", en: "looking up" }, { zh: "向下俯視", en: "looking down" }, { zh: "高冷鄙視", en: "cold contempt" }, { zh: "放空無表情", en: "expressionless" }, { zh: "高貴疏離", en: "noble and aloof" }, { zh: "哀愁眼神", en: "sad eyes" }, { zh: "閉眼享受", en: "eyes closed enjoying" }, { zh: "臉部凍紅", en: "face frozen red" }, { zh: "羞恥臉紅", en: "embarrassed face" }, { zh: "驚訝", en: "surprised expression" }] },
+      { tab: "character", group: "妝感", key: "makeup_base", label: "底妝 (Base)", safety: "safe", options: [{ zh: "日系甜美妝", en: "Japanese sweet makeup" }, { zh: "韓系清透", en: "Korean clear makeup" }, { zh: "韓系自然", en: "Korean natural makeup" }, { zh: "日系基礎", en: "Japanese basic makeup" }, { zh: "輕混血感", en: "light mixed-race makeup" }, { zh: "職場精緻", en: "sophisticated office makeup" }, { zh: "奶油裸妝", en: "creamy nude makeup" }, { zh: "元氣少女", en: "youthful energetic makeup" }, { zh: "冷豔成熟", en: "cool mature makeup" }, { zh: "仙女輕透", en: "dewy fairy makeup" }, { zh: "日式宿醉", en: "igari makeup" }, { zh: "歐美立體", en: "Western contour makeup" }, { zh: "偽素顏", en: "no-makeup makeup" }, { zh: "霧面妝效", en: "matte makeup" }, { zh: "自然妝容", en: "natural makeup" }, { zh: "Glass Skin男妝", en: "glass skin male makeup" }, { zh: "古風男妝", en: "ancient male makeup" }, { zh: "劍眉星目", en: "heroic eyebrow makeup" }] },
+      { tab: "character", group: "妝感", key: "eyebrows", label: "眉毛 (Eyebrows)", safety: "safe", options: [{ zh: "自然濃眉", en: "natural thick brows" }, { zh: "柳葉眉", en: "thin arched brows" }, { zh: "圓弧柔眉", en: "soft rounded brows" }, { zh: "一字平眉", en: "straight flat brows" }, { zh: "俐落劍眉", en: "sharp angled brows" }, { zh: "狂野粗眉", en: "thick bushy brows" }, { zh: "高挑歐美眉", en: "high arched brows" }, { zh: "無感淺眉", en: "bleached brows" }, { zh: "上揚挑眉", en: "upturned brows" }, { zh: "濃短平直眉", en: "thick straight brows" }, { zh: "斷眉", en: "eyebrow slit" }, { zh: "稀疏雜眉", en: "sparse brows" }, { zh: "缺角斷尾", en: "missing tail brows" }, { zh: "八字愁眉", en: "downturned brows" }, { zh: "短促公家眉", en: "hikimayu" }] },
+      { tab: "character", group: "妝感", key: "lip_eye", label: "唇妝與眼妝", safety: "safe", options: [{ zh: "經典紅唇", en: "classic red lips" }, { zh: "水光唇釉", en: "glossy lips" }, { zh: "霧面裸唇", en: "matte nude lips" }, { zh: "咬唇妝", en: "gradient lips" }, { zh: "口紅痕跡", en: "lipstick trace" }, { zh: "精緻眼線", en: "sharp winged eyeliner" }, { zh: "濃密睫毛", en: "long voluminous eyelashes" }, { zh: "煙燻眼妝", en: "dark smoky eye makeup" }, { zh: "眼影濃妝", en: "heavy eyeshadow" }, { zh: "雀斑妝", en: "faux freckles" }, { zh: "曬傷妝", en: "sunburned blush" }, { zh: "戰損髒妝", en: "slightly dirty face" }] },
+      { tab: "character", group: "五官輪廓", key: "face_shape", label: "臉型 (Face)", safety: "safe", options: [{ zh: "鵝蛋臉", en: "oval face" }, { zh: "心形臉", en: "heart-shaped face" }, { zh: "V型臉", en: "V-shaped face" }, { zh: "圓臉", en: "round face" }, { zh: "娃娃臉", en: "baby face" }, { zh: "高顴骨", en: "high cheekbones" }, { zh: "國字臉", en: "square face" }, { zh: "長形臉", en: "oblong face" }, { zh: "鑽石臉", en: "diamond face" }, { zh: "梨形臉", en: "pear face" }, { zh: "長方形臉", en: "rectangular face" }, { zh: "卵形臉", en: "egg shaped face" }] },
+      { tab: "character", group: "五官輪廓", key: "eye_shape", label: "眼型 (Eye Shape)", safety: "safe", options: [{ zh: "狐媚眼", en: "fox eyes" }, { zh: "杏眼", en: "almond eyes" }, { zh: "美瞳大眼", en: "large round eyes" }, { zh: "丹鳳眼", en: "phoenix eyes" }, { zh: "無辜大眼", en: "round innocent eyes" }, { zh: "臥蠶眼", en: "aegyo-sal eyes" }, { zh: "貓系電眼", en: "feline eyes" }, { zh: "厭世下三白眼", en: "high-cold sanpaku eyes" }, { zh: "垂眼", en: "pitying droopy eyes" }, { zh: "母鹿眼", en: "doe eyes" }, { zh: "慵懶半瞇", en: "bedroom eyes" }, { zh: "單眼皮", en: "monolid eyes" }, { zh: "深邃凹陷", en: "deep-set eyes" }, { zh: "貓眼", en: "cat eyes" }, { zh: "內雙", en: "hooded eyes" }, { zh: "細長瞇瞇眼", en: "narrow squinting eyes" }, { zh: "突眼", en: "protruding eyes" }, { zh: "下三白眼", en: "sanpaku eyes" }, { zh: "東方瑞鳳眼", en: "oriental phoenix eyes" }, { zh: "半瞇夢幻", en: "half-closed dreamy eyes" }, { zh: "異瞳", en: "heterochromia eyes" }, { zh: "蒼老皺紋", en: "wrinkled aged eyes" }, { zh: "三角眼", en: "triangular eyes" }, { zh: "八字憂鬱", en: "sad downturned eyes" }] },
+      { tab: "character", group: "五官輪廓", key: "eye_color", label: "瞳色 (Eye Color)", safety: "safe", options: [{ zh: "淺棕", en: "light brown eyes" }, { zh: "深褐", en: "dark brown eyes" }, { zh: "黑", en: "black eyes" }, { zh: "琥珀", en: "amber eyes" }, { zh: "藍", en: "blue eyes" }, { zh: "綠", en: "green eyes" }, { zh: "灰", en: "grey eyes" }, { zh: "榛果色", en: "hazel eyes" }, { zh: "冰藍色", en: "ice blue eyes" }, { zh: "翠綠色", en: "emerald green eyes" }, { zh: "愛心瞳", en: "heart shaped pupils" }, { zh: "星星瞳", en: "star shaped pupils" }, { zh: "閃爍星空", en: "sparkle flash eyes" }, { zh: "貓眼直瞳", en: "cat vertical slit pupils" }, { zh: "十字瞳", en: "cross shaped pupils" }, { zh: "螺旋瞳", en: "hypnotic spiral" }, { zh: "花瓣瞳", en: "flower shaped pupils" }, { zh: "鑽石瞳", en: "diamond shaped pupils" }, { zh: "虛無瞳", en: "blank void eyes" }, { zh: "鑰匙孔瞳", en: "keyhole shaped pupils" }] },
+      { tab: "character", group: "五官輪廓", key: "forehead", label: "額頭 (Forehead)", safety: "safe", options: [{ zh: "飽滿圓潤", en: "full rounded forehead" }, { zh: "高聰慧感", en: "high forehead" }, { zh: "美人尖", en: "widows peak" }, { zh: "窄額頭", en: "narrow forehead" }, { zh: "平整", en: "flat forehead" }, { zh: "寬闊", en: "broad wide forehead" }, { zh: "傾斜", en: "sloping forehead" }, { zh: "眉骨突出", en: "prominent brow ridge" }, { zh: "方形", en: "square forehead" }, { zh: "抬頭紋", en: "wrinkled forehead" }] },
+      { tab: "character", group: "五官輪廓", key: "cheeks", label: "臉頰 (Cheeks)", safety: "safe", options: [{ zh: "圓潤肉感", en: "soft rounded baby fat cheeks" }, { zh: "紅潤透亮", en: "rosy blushing cheeks" }, { zh: "平整", en: "flat cheeks" }, { zh: "高聳顴骨", en: "high defined cheekbones" }, { zh: "豐滿蘋果肌", en: "plump apple cheeks" }, { zh: "酒窩", en: "dimpled cheeks" }, { zh: "凹陷消瘦", en: "hollow cheeks" }, { zh: "明顯顴骨", en: "prominent cheekbones" }, { zh: "下垂鬆弛", en: "droopy jowls" }, { zh: "修容深邃", en: "contoured cheeks" }] },
+      { tab: "character", group: "五官輪廓", key: "chin", label: "下巴 (Chin)", safety: "safe", options: [{ zh: "尖V下巴", en: "sharp pointed chin" }, { zh: "方下顎", en: "square jawline" }, { zh: "圓下巴", en: "round soft chin" }, { zh: "美人溝", en: "cleft chin" }, { zh: "縮下巴", en: "receding chin" }, { zh: "戽斗", en: "protruding chin" }, { zh: "雙下巴", en: "double chin" }, { zh: "寬闊下巴", en: "broad wide chin" }, { zh: "平下巴", en: "flat blunt chin" }, { zh: "短下巴", en: "short chin" }] },
+      { tab: "character", group: "五官輪廓", key: "ears", label: "耳朵 (Ears)", safety: "safe", options: [{ zh: "標準卵形", en: "oval shaped ears" }, { zh: "圓潤厚耳", en: "round fleshy ears" }, { zh: "長方形", en: "rectangular long ears" }, { zh: "倒三角", en: "triangular ears" }, { zh: "招風耳", en: "protruding ears" }, { zh: "精緻小耳", en: "small petite ears" }, { zh: "尖頂", en: "pointed upper helix" }, { zh: "寬厚大耳", en: "broad thick ears" }, { zh: "垂墜耳垂", en: "droopy earlobes" }, { zh: "貼腦耳", en: "hidden ears" }, { zh: "精靈長尖耳", en: "elf ears" }, { zh: "短尖精靈耳", en: "short pixie ears" }, { zh: "貓耳", en: "cat ears" }, { zh: "狐狸大耳", en: "fox ears" }, { zh: "直立兔耳", en: "bunny ears" }, { zh: "下垂犬耳", en: "droopy puppy ears" }, { zh: "魚鰭耳", en: "oceanic fin ears" }, { zh: "機械耳", en: "robotic mechanical ears" }, { zh: "羊角", en: "satyr goat ears" }, { zh: "惡魔翼耳", en: "demon winged ears" }] },
+      { tab: "character", group: "五官輪廓", key: "nose_shape", label: "鼻型 (Nose Shape)", safety: "safe", options: [{ zh: "鷹鉤鼻", en: "aquiline nose" }, { zh: "希臘直鼻", en: "straight greek nose" }, { zh: "鷲鼻", en: "hawkish nose" }, { zh: "朝天鼻", en: "upturned nose" }, { zh: "小翹鼻", en: "button nose" }, { zh: "努比亞鼻", en: "Nubian nose" }, { zh: "平鼻樑", en: "flat nose bridge" }, { zh: "高挺通天鼻", en: "high bridge regal nose" }, { zh: "塌鼻子", en: "snub nose" }, { zh: "歪鼻子", en: "crooked nose" }, { zh: "蒜頭鼻", en: "bulbous nose" }] },
+      { tab: "character", group: "五官輪廓", key: "mouth", label: "嘴巴 (Mouth)", safety: "safe", options: [{ zh: "微笑唇", en: "permanent smile" }, { zh: "櫻桃小嘴", en: "cherry lips" }, { zh: "圓潤嘟嘟唇", en: "bee-stung lips" }, { zh: "大氣闊嘴", en: "wide mouth" }, { zh: "覆舟唇", en: "downturned mouth" }, { zh: "愛神弓唇", en: "cupid bow lips" }, { zh: "M型唇", en: "m-shaped lips" }, { zh: "一字薄唇", en: "thin line lips" }, { zh: "橢圓形唇", en: "oval shaped lips" }, { zh: "比例均勻", en: "even proportion lips" }, { zh: "極厚豐滿", en: "thick full lips" }, { zh: "極薄纖細", en: "thin delicate lips" }, { zh: "寬闊大嘴", en: "broad mouth" }, { zh: "窄小嘴型", en: "narrow small mouth" }, { zh: "厚重下唇", en: "heavy lower lip" }, { zh: "厚上唇", en: "thick upper lip" }, { zh: "薄上唇", en: "thin upper lip" }, { zh: "腫脹厚唇", en: "puffy swollen lips" }, { zh: "不對稱唇", en: "asymmetrical lips" }] },
+      { tab: "outfit", group: "服裝套裝", key: "costume", label: "服裝套裝 (Costume Preset)", safety: "safe", options: [{ zh: "校園/JK", en: "school uniform" }, { zh: "便服", en: "casual outfit" }, { zh: "運動", en: "sporty outfit" }, { zh: "街頭", en: "streetwear outfit" }, { zh: "運動休閒", en: "athleisure outfit" }, { zh: "度假風", en: "resort wear" }, { zh: "賽博龐克", en: "cyberpunk outfit" }, { zh: "晚宴", en: "evening dress" }, { zh: "冬季滑雪", en: "winter outfit" }, { zh: "角色扮演", en: "cosplay outfit" }, { zh: "舒適睡衣", en: "sleepwear" }, { zh: "中性工裝", en: "tomboy workwear" }, { zh: "現代和風", en: "modern kimono" }, { zh: "經典復古", en: "vintage outfit" }, { zh: "華麗休閒", en: "dressy casual outfit" }, { zh: "中式旗袍", en: "cheongsam" }, { zh: "OL秘書", en: "office lady outfit" }, { zh: "日系森女", en: "mori girl harajuku" }, { zh: "韓系精緻", en: "Korean style outfit" }, { zh: "歐美簡約", en: "Western minimalist outfit" }, { zh: "法式慵懶", en: "French chic outfit" }, { zh: "商務休閒", en: "smart casual outfit" }, { zh: "美式學院", en: "preppy style outfit" }, { zh: "精緻小香風", en: "tweed Chanel style" }, { zh: "清新碎花", en: "fresh floral outfit" }, { zh: "淺色襯衫式洋裝", en: "light shirt dress" }, { zh: "粉色雪紡洋裝", en: "pink chiffon dress" }, { zh: "白T+百褶短裙", en: "white t-shirt and pleated mini skirt" }, { zh: "米白方領泡泡袖", en: "beige square-neck puff-sleeve dress" }, { zh: "蕾絲洋裝", en: "lace dress" }, { zh: "針織洋裝", en: "knitted dress" }, { zh: "白T+短牛仔褲", en: "white t-shirt and denim shorts" }, { zh: "細肩帶連衣裙", en: "spaghetti strap dress" }, { zh: "白色細肩+寬褲", en: "white camisole and wide-leg jeans" }, { zh: "韓版收腰連衣裙", en: "Korean cinched denim dress" }, { zh: "一字領+吊帶裙", en: "off-shoulder top and suspender skirt" }, { zh: "吊帶裙連衣裙", en: "denim slip dress" }, { zh: "中山裝", en: "Chinese tunic suit" }, { zh: "深色西裝+白襯衫", en: "dark suit jacket and white shirt" }, { zh: "深色西裝+淺藍襯衫", en: "dark suit jacket and light blue shirt" }, { zh: "黑色高領毛衣", en: "black turtleneck sweater" }, { zh: "淺藍襯衫", en: "light blue shirt" }, { zh: "白襯衫+牛仔褲", en: "white shirt and jeans" }, { zh: "深色Polo+牛仔", en: "dark polo shirt and jeans" }, { zh: "休閒T+牛仔", en: "casual t-shirt and jeans" }, { zh: "美式休閒T", en: "American casual t-shirt and jeans" }, { zh: "日系清新風", en: "Japanese fresh minimalist" }, { zh: "韓系簡約風", en: "Korean minimalist" }, { zh: "輕鬆約會風", en: "smart-casual date outfit" }, { zh: "英倫紳士風", en: "British gentleman outfit" }], custom: true },
+      { tab: "outfit", group: "服裝套裝", key: "outfit_fit", label: "穿著效果 (Fit)", safety: "safe", options: [{ zh: "寬鬆感", en: "loose oversized fit" }, { zh: "極度貼合", en: "form fitting" }] },
+      { tab: "outfit", group: "飾品配件", key: "headwear", label: "頭飾與面具 (Headwear/Mask)", safety: "safe", options: [{ zh: "棒球帽", en: "cap" }, { zh: "針織毛帽", en: "pompom hat" }, { zh: "毛線帽", en: "beanie" }, { zh: "毛絨護耳罩", en: "earmuffs" }, { zh: "寬簷草帽", en: "straw hat" }, { zh: "畫家帽", en: "beret" }, { zh: "漁夫帽", en: "bucket hat" }, { zh: "報童帽", en: "newsboy cap" }, { zh: "遮陽帽", en: "visor cap" }, { zh: "頭巾", en: "bandana" }, { zh: "牛仔帽", en: "cowboy hat" }, { zh: "髮箍", en: "headband" }, { zh: "蕾絲髮箍", en: "lace headband" }, { zh: "絲帶髮帶", en: "silk ribbon hairband" }, { zh: "大蝴蝶結", en: "giant bow" }, { zh: "多個髮夾", en: "multiple hair clips" }, { zh: "金屬髮夾", en: "metal hair clip" }, { zh: "珍珠髮釵", en: "pearl hairpin" }, { zh: "花朵髮飾", en: "flower hair accessory" }, { zh: "皇冠", en: "tiara" }, { zh: "新娘頭紗", en: "wedding veil" }, { zh: "運動頭帶", en: "sports sweatband" }, { zh: "中式髮簪", en: "Chinese hair stick" }, { zh: "鬼面具", en: "oni mask" }, { zh: "天狗面具", en: "tengu mask" }, { zh: "忍者面具", en: "ninja mask" }, { zh: "骷髏面具", en: "skull mask" }, { zh: "曲棍球面具", en: "hockey mask" }, { zh: "瘟疫醫生", en: "plague doctor mask" }, { zh: "防毒面具", en: "gas mask" }, { zh: "化妝舞會面具", en: "masquerade mask" }, { zh: "細框眼鏡", en: "thin metal rimmed glasses" }, { zh: "黑框眼鏡", en: "thick black-rimmed glasses" }, { zh: "無框眼鏡", en: "rimless eyewear" }, { zh: "圓形眼鏡", en: "round eyewear" }, { zh: "無上框眼鏡", en: "semi-rimless eyewear" }, { zh: "太陽眼鏡頭頂", en: "sunglasses perched on head" }, { zh: "戴太陽眼鏡", en: "wearing dark sunglasses" }, { zh: "單片眼鏡", en: "monocle" }, { zh: "眼罩醫療", en: "medical eye patch" }, { zh: "白口罩", en: "white face mask" }, { zh: "黑口罩", en: "black face mask" }, { zh: "煙斗", en: "smoking pipe" }, { zh: "兔耳髮箍", en: "black bunny ears" }, { zh: "毛茸茸貓耳", en: "fluffy cat ears" }, { zh: "狐狸耳", en: "fox ears" }, { zh: "女僕喀秋莎", en: "frilly maid headdress" }, { zh: "惡魔角", en: "small devil horns" }, { zh: "天使光環", en: "glowing angel halo" }, { zh: "耳機掛頸", en: "headphones around neck" }, { zh: "貓耳耳機", en: "cat-ear gaming headphones" }, { zh: "頭戴式耳機", en: "over-ear headphones" }, { zh: "護士帽", en: "nurse hat" }, { zh: "魔法師帽", en: "wizard hat" }] },
+      { tab: "outfit", group: "飾品配件", key: "jewelry", label: "飾品 (Jewelry)", safety: "safe", options: [{ zh: "耳環", en: "earrings" }, { zh: "鑽石耳釘", en: "diamond studs" }, { zh: "大圓圈耳環", en: "hoop earrings" }, { zh: "長垂墜耳環", en: "long dangling earrings" }, { zh: "珍珠耳環", en: "elegant pearl earrings" }, { zh: "流蘇耳環", en: "tassel earrings" }, { zh: "十字架耳環", en: "gothic cross earrings" }, { zh: "耳骨夾", en: "ear cuff" }, { zh: "耳釘", en: "ear stud" }, { zh: "多重耳環", en: "multiple piercings" }, { zh: "厚羊毛圍巾", en: "chunky wool scarf" }, { zh: "格紋圍巾", en: "plaid winter scarf" }, { zh: "皮革頸圈", en: "leather choker" }, { zh: "蕾絲頸鍊", en: "black lace choker" }, { zh: "金屬項鍊", en: "gold chain necklace" }, { zh: "多層珍珠項鍊", en: "layered pearl necklace" }, { zh: "鑽石項鍊", en: "luxury diamond necklace" }, { zh: "紅絲帶頸部", en: "red ribbon around neck" }, { zh: "簡約項鍊", en: "simple necklace" }, { zh: "細鍊", en: "delicate thin chain necklace" }, { zh: "造型項鍊", en: "statement necklace" }, { zh: "鈴鐺項鍊", en: "bell choker" }, { zh: "唇環", en: "lip piercing" }, { zh: "眉毛穿刺", en: "eyebrow piercing" }] },
+      { tab: "outfit", group: "飾品配件", key: "hands", label: "手部 (Hands)", safety: "safe", options: [{ zh: "緞面長手套", en: "long satin gloves" }, { zh: "蕾絲手套", en: "sheer lace gloves" }, { zh: "毛絨連指手套", en: "mittens" }, { zh: "紅色綁手緞帶", en: "red ribbon tied around hands" }, { zh: "多枚戒指", en: "multiple rings" }, { zh: "單一鑽戒", en: "single diamond ring" }, { zh: "手鍊", en: "delicate bracelet chain" }, { zh: "手錶", en: "wristwatch" }, { zh: "金手鐲", en: "gold bracelets" }, { zh: "指甲油", en: "colorful nail polish" }, { zh: "法式指甲", en: "french manicure" }] },
+      { tab: "outfit", group: "飾品配件", key: "bag", label: "包包與配件 (Acc)", safety: "safe", options: [{ zh: "手袋", en: "handbag" }, { zh: "斜背迷你包", en: "satchel" }, { zh: "JK皮革書包", en: "leather school briefcase" }, { zh: "深藍尼龍書包", en: "navy blue nylon school bag" }, { zh: "小方包", en: "small square bag" }, { zh: "迷你水桶包", en: "mini bucket bag" }, { zh: "菱格紋鏈帶包", en: "quilted chain bag" }, { zh: "托特包", en: "tote bag" }, { zh: "時尚手拿包", en: "stylish clutch" }, { zh: "側背包", en: "crossbody bag" }, { zh: "手拿包", en: "clutch bag" }, { zh: "晚宴包", en: "evening bag" }, { zh: "復古相機", en: "vintage camera" }, { zh: "藍牙耳機", en: "bluetooth earpiece" }, { zh: "太陽眼鏡頸上", en: "sunglasses around neck" }, { zh: "羽毛裝飾", en: "feather accessories" }, { zh: "亮片裝飾", en: "glitter and sparkles" }, { zh: "風紀委員臂章", en: "armband" }] },
+      { tab: "outfit", group: "外套上衣", key: "outerwear", label: "外套/罩衫 (Outerwear)", safety: "safe", options: [{ zh: "牛仔外套", en: "denim jacket" }, { zh: "針織開衫", en: "cardigan" }, { zh: "皮夾克", en: "leather jacket" }, { zh: "透明塑膠外套", en: "transparent vinyl jacket" }, { zh: "格紋羊毛西裝", en: "checkered wool blazer" }, { zh: "海軍藍西裝", en: "classic navy blazer" }, { zh: "灰色校服西裝", en: "gray school blazer" }, { zh: "校徽西裝", en: "school emblem blazer" }, { zh: "短版連帽防風", en: "cropped hooded windbreaker" }, { zh: "蓬鬆羽絨褸", en: "puffer jacket" }, { zh: "滑雪連身服", en: "ski suit" }, { zh: "滑雪外套", en: "ski jacket" }, { zh: "連帽派克大衣", en: "parka jacket" }, { zh: "羊毛大衣", en: "wool coat" }, { zh: "雙排扣外套", en: "double breasted jacket" }, { zh: "背心外套", en: "vest outfit" }, { zh: "飛行夾克", en: "bomber jacket" }, { zh: "運動風褸", en: "windbreaker" }, { zh: "連帽外套", en: "zip hoodie" }, { zh: "棒球褸", en: "varsity letterman jacket" }, { zh: "風衣", en: "trench coat" }, { zh: "披肩", en: "shawl" }] },
+      { tab: "outfit", group: "外套上衣", key: "top", label: "上衣 (Top)", safety: "safe", options: [{ zh: "T恤", en: "t-shirt" }, { zh: "襯衫", en: "blouse" }, { zh: "緊身T恤", en: "tight-fitting t-shirt" }, { zh: "合身T恤", en: "fitted t-shirt" }, { zh: "Oversize男友T", en: "oversized boyfriend t-shirt" }, { zh: "連帽衛衣", en: "hoodie" }, { zh: "格子襯衫", en: "plaid flannel shirt" }, { zh: "羅紋針織開襟", en: "ribbed knit cardigan" }, { zh: "蕾絲長袖襯衫", en: "lace long-sleeve blouse" }, { zh: "維多利亞長袖", en: "Victorian long-sleeve blouse" }, { zh: "寬鬆垂領", en: "loose cowl neck top" }, { zh: "露肩針織衫", en: "off-shoulder knitted sweater" }, { zh: "緊身針織衫", en: "tight ribbed knit sweater" }, { zh: "短版緊身T", en: "baby tee" }, { zh: "短版立領襯衫", en: "crop top with mandarin collar" }, { zh: "高領無袖", en: "sleeveless turtleneck" }, { zh: "連身花裙", en: "floral sundress" }, { zh: "高領厚毛衣", en: "turtleneck sweater" }, { zh: "毛絨抓絨上衣", en: "fleece top" }, { zh: "修身西裝外套", en: "blazer" }, { zh: "白絲綢襯衫", en: "white silk button-down" }, { zh: "半透雪紡襯衫", en: "semi-sheer chiffon blouse" }, { zh: "西裝馬甲", en: "formal suit vest" }, { zh: "雙排扣西裝", en: "double-breasted suit jacket" }, { zh: "立領襯衫", en: "mandarin collar shirt" }, { zh: "白色牛津襯衫", en: "classic white oxford shirt" }, { zh: "刺繡亞麻衫", en: "embroidered linen chemise" }, { zh: "泡泡袖亞麻", en: "linen blouse with puffed sleeves" }, { zh: "海軍領白襯衫", en: "sailor collar white blouse" }, { zh: "短版上衣", en: "crop top" }, { zh: "基礎吊帶背心", en: "spaghetti strap camisole" }, { zh: "蕾絲背心", en: "lace-trimmed camisole" }, { zh: "工字背心", en: "racerback tank top" }, { zh: "羅紋背心", en: "ribbed knit sweater vest" }, { zh: "掛脖短版", en: "halter top" }, { zh: "交叉綁帶背心", en: "criss-cross strap tank top" }, { zh: "短版運動背心", en: "cropped athletic tank top" }, { zh: "緞面內搭背心", en: "satin camisole" }, { zh: "水洗染露背", en: "tie-dye halter crop top" }, { zh: "網眼開口無袖", en: "cutout mesh sleeveless tee" }, { zh: "露肩針織毛衣", en: "off-shoulder knit sweater" }, { zh: "緞面露肩", en: "satin cold shoulder blouse" }, { zh: "荷葉邊露肩", en: "ruffled off-shoulder crop top" }, { zh: "天鵝絨露肩", en: "velvet off-shoulder shirt" }, { zh: "棉質露肩T", en: "cotton cold shoulder tee" }, { zh: "亮片露肩", en: "sequined off-shoulder top" }, { zh: "網眼露肩", en: "mesh cold shoulder blouse" }, { zh: "絲質露肩", en: "silk off-shoulder blouse" }, { zh: "牛仔露肩", en: "denim cold shoulder jacket" }, { zh: "蕾絲邊露肩", en: "lace-trimmed off-shoulder tee" }, { zh: "亞麻露肩", en: "linen cold shoulder top" }, { zh: "鉤織露肩", en: "crochet off-shoulder blouse" }, { zh: "天鵝絨露肩毛衣", en: "velvet cold shoulder sweater" }, { zh: "開口露肩", en: "cutout off-shoulder crop top" }, { zh: "古典長旗袍", en: "traditional elegant silk cheongsam" }, { zh: "入膊旗袍", en: "halter-neck cheongsam" }, { zh: "職人圍裙", en: "heavy-duty canvas work apron" }, { zh: "可愛廚房圍裙", en: "cute frilly kitchen apron" }, { zh: "工裝連身服", en: "utility boiler suit" }, { zh: "深藍水手服", en: "classic navy sailor uniform top" }, { zh: "白短袖水手服", en: "white short-sleeve sailor uniform" }, { zh: "校服西裝", en: "school uniform blazer" }, { zh: "米色校服開衫", en: "beige knit school cardigan" }, { zh: "海軍針織背心", en: "navy knitted school vest" }, { zh: "白襯衫+領結", en: "white shirt with ribbon" }, { zh: "白襯衫+領帶", en: "white shirt with necktie" }, { zh: "體育服外套", en: "school gym jersey jacket" }, { zh: "體育服T", en: "white school gym t-shirt" }, { zh: "護士服", en: "classic nurse uniform" }, { zh: "女僕裝", en: "classic french maid outfit" }, { zh: "傳統和服", en: "traditional Japanese kimono" }, { zh: "傳統韓服", en: "traditional Korean hanbok" }, { zh: "傳統泰服", en: "traditional Thai outfit" }, { zh: "中式漢服", en: "Chinese ancient hanfu" }, { zh: "運動內衣", en: "sports bra" }, { zh: "居家連身服", en: "onesie sleepwear" }, { zh: "BF風白襯衫", en: "BF-style oversized white shirt" }, { zh: "戰術胸甲", en: "tactical carbon fiber chestplate" }, { zh: "天鵝絨緊身", en: "royal velvet bodice" }, { zh: "鏈甲", en: "chainmail hauberk" }] },
+      { tab: "outfit", group: "外套上衣", key: "top_color", label: "顏色 (上衣)", safety: "safe", options: [{ zh: "黑", en: "black" }, { zh: "白", en: "white" }, { zh: "紅", en: "red" }, { zh: "藍", en: "blue" }, { zh: "粉紅", en: "pink" }, { zh: "黃", en: "yellow" }, { zh: "綠", en: "green" }, { zh: "紫", en: "purple" }, { zh: "金", en: "gold" }, { zh: "銀", en: "silver" }, { zh: "灰", en: "grey" }, { zh: "棕", en: "brown" }, { zh: "米色", en: "beige" }] },
+      { tab: "outfit", group: "外套上衣", key: "top_material", label: "材質 (上衣)", safety: "safe", options: [{ zh: "純棉", en: "cotton" }, { zh: "牛仔", en: "denim" }, { zh: "羅紋針織", en: "ribbed" }, { zh: "抓絨", en: "fleece" }, { zh: "羊毛", en: "wool" }, { zh: "羊絨針織", en: "cashmere" }, { zh: "高級絲綢", en: "high-end silk" }, { zh: "錦緞", en: "brocade" }, { zh: "皮革", en: "leather" }, { zh: "蕾絲", en: "lace" }, { zh: "透膚雪紡", en: "sheer chiffon" }, { zh: "薄紗", en: "tulle" }, { zh: "網紗", en: "mesh" }] },
+      { tab: "outfit", group: "外套上衣", key: "top_pattern", label: "花紋 (上衣)", safety: "safe", options: [{ zh: "碎花", en: "small floral print" }, { zh: "和風花紋", en: "traditional Japanese pattern" }, { zh: "幾何", en: "geometric pattern" }, { zh: "豹紋", en: "leopard print" }, { zh: "蛇紋", en: "snakeskin print" }, { zh: "格子", en: "plaid" }, { zh: "條紋", en: "striped" }, { zh: "波點", en: "polka dot" }, { zh: "直條紋", en: "vertical stripes" }, { zh: "橫條紋", en: "horizontal stripes" }, { zh: "波西米亞", en: "bohemian" }, { zh: "復古", en: "vintage" }, { zh: "素色", en: "plain" }, { zh: "千鳥紋", en: "houndstooth" }, { zh: "斑馬紋", en: "zebra print" }, { zh: "蘇格蘭格", en: "Scotch plaid" }] },
+      { tab: "outfit", group: "下身穿著", key: "bottom", label: "下著 (Bottom)", safety: "safe", options: [{ zh: "牛仔褲", en: "jeans" }, { zh: "尼龍雪褲", en: "waterproof insulated snow pants" }, { zh: "內起絨保暖長褲", en: "fleece-lined winter trousers" }, { zh: "優閒直腳褲", en: "straight leg pants" }, { zh: "牛仔吊帶褲", en: "denim overalls" }, { zh: "卡其吊帶褲", en: "beige work dungarees" }, { zh: "緊身牛仔褲", en: "skinny jeans" }, { zh: "一般牛仔褲", en: "regular jeans" }, { zh: "棉質運動褲", en: "sweatpants" }, { zh: "寬鬆工裝褲", en: "cargo pants" }, { zh: "喇叭褲", en: "retro flared trousers" }, { zh: "西裝長褲", en: "tailored formal trousers" }, { zh: "寬褲", en: "palazzo pants" }, { zh: "體育長褲", en: "track pants" }, { zh: "瑜伽褲", en: "tight yoga pants" }, { zh: "短褲", en: "shorts" }, { zh: "高腰牛仔短褲", en: "high-waisted denim shorts" }, { zh: "單車褲", en: "biker shorts" }, { zh: "體育短褲", en: "bloomers" }, { zh: "真理褲", en: "dolphin shorts" }, { zh: "長裙", en: "long skirt" }, { zh: "及膝鉛筆裙", en: "knee-length pencil skirt" }, { zh: "A字西裝裙", en: "A-line formal skirt" }, { zh: "格紋百褶裙", en: "plaid pleated skirt" }, { zh: "百褶校裙", en: "solid pleated school skirt" }, { zh: "西裝校裙", en: "formal school skirt" }, { zh: "荷葉邊半圓裙", en: "ruffled hem skater skirt" }, { zh: "經典黑圍裙裙", en: "classic black pinafore" }, { zh: "卡其喇叭裙", en: "A-line camel skirt" }, { zh: "百褶酒紅裙", en: "pleated burgundy skirt" }, { zh: "海軍領深藍洋裝", en: "sailor collar navy dress" }, { zh: "百褶短裙", en: "pleated mini skirt" }, { zh: "高腰百褶裙", en: "high-waisted pleated skirt" }, { zh: "牛仔短裙", en: "short denim skirt" }, { zh: "荷葉邊短裙", en: "ruffled mini skirt" }, { zh: "女裝平腳內褲", en: "women boxer briefs" }, { zh: "棉糖條紋短褲", en: "cotton candy striped boyshorts" }, { zh: "無痕臀部褲", en: "seamless microfiber hipster" }, { zh: "波點臀部褲", en: "polka dot cotton hipsters" }, { zh: "復古花卉短褲", en: "vintage floral print boyshorts" }] },
+      { tab: "outfit", group: "下身穿著", key: "bottom_color", label: "顏色 (下身)", safety: "safe", options: [{ zh: "黑", en: "black" }, { zh: "白", en: "white" }, { zh: "紅", en: "red" }, { zh: "藍", en: "blue" }, { zh: "粉紅", en: "pink" }, { zh: "黃", en: "yellow" }, { zh: "綠", en: "green" }, { zh: "紫", en: "purple" }, { zh: "金", en: "gold" }, { zh: "銀", en: "silver" }, { zh: "灰", en: "grey" }, { zh: "棕", en: "brown" }, { zh: "米色", en: "beige" }] },
+      { tab: "outfit", group: "下身穿著", key: "bottom_material", label: "材質 (下身)", safety: "safe", options: [{ zh: "純棉", en: "cotton" }, { zh: "牛仔", en: "denim" }, { zh: "羅紋針織", en: "ribbed" }, { zh: "抓絨", en: "fleece" }, { zh: "羊毛", en: "wool" }, { zh: "羊絨針織", en: "cashmere" }, { zh: "高級絲綢", en: "high-end silk" }, { zh: "錦緞", en: "brocade" }, { zh: "皮革", en: "leather" }, { zh: "蕾絲", en: "lace" }, { zh: "透膚雪紡", en: "sheer chiffon" }, { zh: "薄紗", en: "tulle" }, { zh: "網紗", en: "mesh" }] },
+      { tab: "outfit", group: "下身穿著", key: "bottom_pattern", label: "花紋 (下身)", safety: "safe", options: [{ zh: "碎花", en: "small floral print" }, { zh: "和風花紋", en: "traditional Japanese pattern" }, { zh: "幾何", en: "geometric pattern" }, { zh: "豹紋", en: "leopard print" }, { zh: "蛇紋", en: "snakeskin print" }, { zh: "格子", en: "plaid" }, { zh: "條紋", en: "striped" }, { zh: "波點", en: "polka dot" }, { zh: "直條紋", en: "vertical stripes" }, { zh: "橫條紋", en: "horizontal stripes" }, { zh: "波西米亞", en: "bohemian" }, { zh: "復古", en: "vintage" }, { zh: "素色", en: "plain" }, { zh: "千鳥紋", en: "houndstooth" }, { zh: "斑馬紋", en: "zebra print" }, { zh: "蘇格蘭格", en: "Scotch plaid" }] },
+      { tab: "outfit", group: "腿部與鞋襪", key: "socks", label: "襪子 (Socks)", safety: "safe", options: [{ zh: "厚羊毛襪", en: "thick thermal wool socks" }, { zh: "短襪", en: "ankle socks" }, { zh: "膝下襪", en: "knee-high socks" }, { zh: "過膝襪", en: "thigh-high socks" }, { zh: "黑絲襪", en: "black pantyhose" }, { zh: "絲襪", en: "stockings" }, { zh: "不對稱褲襪", en: "asymmetrical legwear" }, { zh: "露趾襪", en: "toeless legwear" }, { zh: "馬鐙襪", en: "stirrup legwear" }, { zh: "長筒襪", en: "thighhighs" }, { zh: "雙色不對稱", en: "mismatched legwear" }, { zh: "雙色調褲襪", en: "two-tone legwear" }, { zh: "長短襪", en: "uneven legwear" }, { zh: "白色長筒襪", en: "white thighhighs" }, { zh: "黑色長筒襪", en: "black thighhighs" }, { zh: "粉色長筒襪", en: "pink thighhighs" }, { zh: "破損褲襪", en: "torn legwear" }, { zh: "鮑比白短襪", en: "bobby socks" }, { zh: "日式足袋", en: "tabi socks" }, { zh: "泡泡襪", en: "loose socks" }, { zh: "踝襪", en: "ankle socks short" }, { zh: "大腿綁帶", en: "thigh strap" }, { zh: "大腿緞帶", en: "thigh ribbon" }, { zh: "膝蓋創可貼", en: "bandaid on knee" }] },
+      { tab: "outfit", group: "腿部與鞋襪", key: "shoes", label: "鞋子 (Shoes)", safety: "safe", options: [{ zh: "小白鞋", en: "white sneakers" }, { zh: "運動鞋", en: "sneakers" }, { zh: "帆布鞋", en: "canvas shoes" }, { zh: "老爹鞋", en: "chunky dad sneakers" }, { zh: "平底鞋", en: "flat shoes" }, { zh: "娃娃鞋", en: "ballet flats" }, { zh: "瑪莉珍鞋", en: "mary jane shoes" }, { zh: "樂福鞋", en: "loafers" }, { zh: "學生皮鞋", en: "student loafers" }, { zh: "黑色制服鞋", en: "black school shoes" }, { zh: "牛津鞋", en: "oxford shoes" }, { zh: "德比鞋", en: "derby shoes" }, { zh: "休閒皮鞋", en: "casual leather shoes" }, { zh: "室內鞋", en: "uwabaki" }, { zh: "拖鞋", en: "slippers" }, { zh: "高跟鞋", en: "heels" }, { zh: "細高跟", en: "stilettos" }, { zh: "涼鞋", en: "sandals" }, { zh: "靴子", en: "boots" }, { zh: "短靴", en: "ankle boots" }, { zh: "馬丁靴", en: "combat boots" }, { zh: "膝下長靴", en: "knee-high boots" }, { zh: "過膝長靴", en: "thigh-high boots" }, { zh: "毛絨雪靴", en: "snow boots" }, { zh: "麂皮保暖靴", en: "ugg style boots" }] },
+      { tab: "action", group: "基礎姿勢", key: "pose", label: "姿勢與手勢 (Pose)", safety: "safe", options: [{ zh: "自然站立", en: "standing naturally" }, { zh: "優閒坐著", en: "sitting" }, { zh: "側坐", en: "sitting sideways" }, { zh: "並腿坐", en: "sit legs together" }, { zh: "盤膝", en: "cross-legged" }, { zh: "翹腳", en: "legs crossed" }, { zh: "抱膝坐", en: "hugging knees" }, { zh: "蹲著", en: "squat" }, { zh: "正蹲", en: "squatting on the front" }, { zh: "側蹲", en: "side squat" }, { zh: "跪姿", en: "kneeling" }, { zh: "扶膝跪", en: "kneel with hands on knees" }, { zh: "單腿站立", en: "standing on one leg" }, { zh: "回眸", en: "looking back" }, { zh: "靠牆", en: "leaning against wall" }, { zh: "靠柱子", en: "casual leaning against pillar" }, { zh: "彎腰", en: "bending over" }, { zh: "抱胸", en: "crossed arms" }, { zh: "手放腰間", en: "hand-on-hip pose" }, { zh: "雙手托腮", en: "resting chin" }, { zh: "單手托頭", en: "propping head" }, { zh: "雙手抱頭", en: "hands behind head" }, { zh: "單手放頭上", en: "hand on head" }, { zh: "心形手勢", en: "half-heart sign" }, { zh: "打電話手勢", en: "call me gesture" }, { zh: "勝利V", en: "victory gesture" }, { zh: "不知道", en: "I dont know shrug" }, { zh: "對不起", en: "apology gesture" }, { zh: "倒讚", en: "thumbs down" }, { zh: "安靜噓", en: "hush silence" }, { zh: "指向", en: "pointing" }, { zh: "讚", en: "thumbs up" }, { zh: "揮手告別", en: "waving goodbye" }, { zh: "揮手打招呼", en: "waving hello" }, { zh: "手愛心", en: "hand heart" }, { zh: "小指承諾", en: "pinky promise" }, { zh: "小指起誓", en: "pinky swear" }, { zh: "走路", en: "walking" }, { zh: "跑步", en: "running" }, { zh: "跳躍", en: "jumping shot" }, { zh: "旋轉", en: "twirling pose" }, { zh: "伸懶腰", en: "stretching yawning" }, { zh: "梳妝整理", en: "grooming" }, { zh: "綁馬尾", en: "tying hair" }, { zh: "撩髮", en: "running fingers through hair" }, { zh: "甩頭髮", en: "head toss" }, { zh: "敲手指", en: "tapping fingers" }, { zh: "表面敲打", en: "drumming fingers" }, { zh: "咬指甲", en: "biting nails" }, { zh: "咬嘴唇", en: "biting lip" }, { zh: "擦手", en: "rubbing hands together" }, { zh: "撕扯頭髮", en: "tugging at hair" }, { zh: "撥弄頭髮", en: "twisting hair strands" }, { zh: "捂臉", en: "covering face with hands" }, { zh: "躲在手後", en: "hiding behind hands" }, { zh: "玩弄衣物", en: "fidgeting with clothing" }, { zh: "避免眼神接觸", en: "avoiding eye contact" }, { zh: "翻白眼", en: "eye roll" }, { zh: "來回踱步", en: "pacing back and forth" }, { zh: "緊握拳頭", en: "clenching fists" }, { zh: "直拳", en: "front punch" }, { zh: "勾拳", en: "hook punch" }, { zh: "上勾拳", en: "uppercut" }, { zh: "刺擊", en: "jabbing" }, { zh: "指刺", en: "finger jab" }, { zh: "掌擊", en: "palm strike" }, { zh: "掌心推", en: "palm push" }, { zh: "反手巴掌", en: "backhand slap" }, { zh: "反拳", en: "back fist" }, { zh: "刀手", en: "chop" }, { zh: "直踢", en: "front kick" }, { zh: "回旋踢", en: "roundhouse kick" }, { zh: "側踢", en: "side kick" }, { zh: "後踢", en: "back kick" }, { zh: "斧踢", en: "axe kick" }, { zh: "手腕扭轉", en: "wrist twist" }, { zh: "仰躺", en: "supine lying" }, { zh: "側躺", en: "side lying" }, { zh: "蜷縮", en: "fetal position" }, { zh: "趴著", en: "prone lying" }, { zh: "半躺靠坐", en: "reclining" }, { zh: "隨意攤開", en: "sprawled" }, { zh: "地板姿勢", en: "floor pose" }], custom: true },
+      { tab: "action", group: "互動行為", key: "activity", label: "互動行為 (Activity)", safety: "safe", options: [{ zh: "看著鏡頭", en: "looking at viewer" }, { zh: "自拍", en: "taking a selfie" }, { zh: "閱讀", en: "reading book" }, { zh: "書寫", en: "writing" }, { zh: "使用手機", en: "using phone" }, { zh: "使用電腦", en: "using computer" }, { zh: "飲食", en: "eating" }, { zh: "喝咖啡", en: "drinking coffee" }, { zh: "聽音樂", en: "listening to music" }, { zh: "桌遊", en: "playing board games" }, { zh: "睡覺", en: "sleeping" }, { zh: "休息", en: "resting" }, { zh: "手叉甜點", en: "poking dessert with a fork" }, { zh: "並肩自拍", en: "taking a selfie together" }, { zh: "對坐凝視", en: "gazing into each others eyes" }, { zh: "牽手", en: "hand holding" }, { zh: "耳語", en: "whispering a secret" }, { zh: "並肩散步", en: "walking side by side" }, { zh: "乾杯", en: "clinking glasses" }, { zh: "遞送禮物", en: "giving a gift" }, { zh: "分享耳機", en: "sharing earphones" }, { zh: "擊掌", en: "high-five" }, { zh: "握手", en: "handshake" }, { zh: "共同看螢幕", en: "looking at a screen together" }, { zh: "開心對望", en: "gazing at each other with joyful smile" }, { zh: "親手餵食", en: "feeding each other" }, { zh: "臉頰沾奶油", en: "dab of cream on cheek" }, { zh: "共享圍巾", en: "sharing a scarf" }, { zh: "共喝飲料", en: "sharing a drink with two straws" }, { zh: "耳邊低語", en: "whispering into ear" }, { zh: "輕捏臉頰", en: "playfully pinching cheek" }, { zh: "幫披外套", en: "draping coat over shoulders" }, { zh: "後座環抱", en: "leaning on shoulder from behind" }, { zh: "鼻子對鼻", en: "nose-to-nose stare" }, { zh: "纏繞手指", en: "intertwined fingers" }, { zh: "擁抱", en: "hug" }, { zh: "背後擁抱", en: "back hug" }, { zh: "親吻額頭", en: "forehead kiss" }, { zh: "親吻臉頰", en: "cheek kiss" }, { zh: "親吻手背", en: "hand kiss" }, { zh: "輕觸鼻尖", en: "nose boop" }, { zh: "摩擦鼻子", en: "nose rub" }, { zh: "撫摸頭髮", en: "hair caress" }, { zh: "搭手肩", en: "hand on shoulder" }, { zh: "肩部擠壓", en: "shoulder squeeze" }, { zh: "手臂依靠", en: "arm rest" }, { zh: "搭手臂", en: "arm linking" }, { zh: "運動流汗", en: "exercising jogging" }, { zh: "跳舞", en: "dancing" }, { zh: "表演", en: "performing" }, { zh: "共同烹飪", en: "cooking together" }, { zh: "打掃", en: "doing chores" }, { zh: "修理組裝", en: "repairing assembling" }, { zh: "遛狗", en: "walking a dog" }, { zh: "白板書寫", en: "writing on whiteboard" }, { zh: "整理儀容", en: "adjusting appearance" }] },
+      { tab: "scene", group: "場景", key: "location", label: "場景 (Location)", safety: "safe", options: [{ zh: "臥室", en: "bedroom" }, { zh: "舒適床鋪", en: "cozy bed" }, { zh: "客廳", en: "living room" }, { zh: "復古皮沙發", en: "leather sofa" }, { zh: "浴室", en: "bathroom" }, { zh: "廚房", en: "kitchen" }, { zh: "窗邊", en: "by the window" }, { zh: "陽台", en: "balcony" }, { zh: "街道", en: "city street" }, { zh: "路口", en: "intersection" }, { zh: "咖啡廳", en: "cafe" }, { zh: "餐廳", en: "restaurant" }, { zh: "公園", en: "park" }, { zh: "廣場", en: "plaza" }, { zh: "商店", en: "shop" }, { zh: "商場", en: "shopping mall" }, { zh: "地鐵", en: "subway" }, { zh: "巴士", en: "bus" }, { zh: "車內", en: "car interior" }, { zh: "圖書館", en: "library" }, { zh: "書店", en: "bookstore" }, { zh: "電影院", en: "cinema" }, { zh: "KTV", en: "karaoke room" }, { zh: "夜店", en: "nightclub" }, { zh: "酒吧", en: "bar" }, { zh: "飯店", en: "hotel room" }, { zh: "辦公室", en: "office" }, { zh: "教室", en: "classroom" }, { zh: "醫院", en: "hospital" }, { zh: "診所", en: "clinic" }, { zh: "健身房", en: "gym" }, { zh: "工廠", en: "factory" }, { zh: "倉庫", en: "warehouse" }, { zh: "攝影棚", en: "studio" }, { zh: "海灘", en: "beach" }, { zh: "泳池", en: "swimming pool" }, { zh: "溫泉", en: "hot spring" }, { zh: "森林", en: "forest" }, { zh: "樹林", en: "woodland" }, { zh: "花園", en: "garden" }, { zh: "草地", en: "lawn" }, { zh: "雛菊花海", en: "flower field" }, { zh: "山頂", en: "mountain peak" }, { zh: "雪地", en: "snowy landscape" }, { zh: "台灣夜市", en: "Taiwan night market" }, { zh: "台灣高鐵站", en: "HSR station" }, { zh: "地鐵站", en: "subway station" }, { zh: "動物園", en: "zoo" }, { zh: "遊樂園", en: "amusement park" }, { zh: "水上樂園", en: "water park" }, { zh: "富士山", en: "Mt. Fuji" }, { zh: "河口湖", en: "Lake Kawaguchiko" }, { zh: "伏見稻荷", en: "Fushimi Inari shrine" }, { zh: "嵐山竹林", en: "Arashiyama bamboo grove" }, { zh: "嚴島神社", en: "Itsukushima shrine" }, { zh: "澀谷十字路口", en: "Shibuya crossing" }, { zh: "東京鐵塔", en: "Tokyo Tower" }, { zh: "新宿歌舞伎町", en: "Shinjuku Kabukicho" }, { zh: "Shibuya Sky", en: "Shibuya Sky observatory" }, { zh: "道頓堀", en: "Dotonbori Osaka" }, { zh: "京都二三年坂", en: "Kyoto Ninenzaka" }, { zh: "淺草雷門", en: "Asakusa Kaminarimon" }, { zh: "金澤茶屋街", en: "Kanazawa Higashi Chaya" }, { zh: "白川鄉合掌造", en: "Shirakawa-go" }, { zh: "鎌倉平交道", en: "Kamakura crossing" }, { zh: "目黑川櫻花", en: "Meguro River cherry blossoms" }, { zh: "奈良公園", en: "Nara Park" }, { zh: "立山雪牆", en: "Tateyama Kurobe snow wall" }, { zh: "足利花卉公園", en: "Ashikaga Flower Park" }], custom: true },
+      { tab: "scene", group: "氛圍", key: "time", label: "時間 (Time)", safety: "safe", options: [{ zh: "清晨", en: "dawn" }, { zh: "白天", en: "daylight" }, { zh: "夏日午後", en: "hot summer afternoon" }, { zh: "黃金時刻", en: "golden hour" }, { zh: "黃昏", en: "sunset" }, { zh: "夜晚", en: "nighttime" }, { zh: "午夜", en: "midnight" }] },
+      { tab: "scene", group: "氛圍", key: "props", label: "環境裝飾與物件 (Props)", safety: "safe", options: [{ zh: "馬克杯", en: "holding a mug" }, { zh: "花朵", en: "with flowers" }, { zh: "仙女棒", en: "sparkler" }, { zh: "星巴克", en: "Starbucks cup" }, { zh: "書本", en: "book" }, { zh: "枕頭", en: "pillow" }, { zh: "小電風扇", en: "mini fan" }, { zh: "燈籠", en: "lantern" }, { zh: "扇", en: "folding fan" }, { zh: "傘", en: "umbrella" }, { zh: "相機", en: "camera" }, { zh: "酒杯", en: "wine glass" }, { zh: "籃球", en: "basketball" }, { zh: "羽球拍", en: "badminton racket" }, { zh: "小盆栽", en: "potted plant" }, { zh: "小食物", en: "snacks" }, { zh: "長棍麵包", en: "baguette" }, { zh: "麵包", en: "bread" }, { zh: "室內植物", en: "indoor plants" }, { zh: "書架", en: "bookshelves" }, { zh: "凌亂衣物", en: "messy clothes" }, { zh: "霓虹燈飾", en: "neon lights" }, { zh: "復古家具", en: "vintage furniture" }, { zh: "奢華裝飾", en: "luxury decor" }, { zh: "工業科幻", en: "industrial sci-fi details" }, { zh: "MUJI風格", en: "MUJI style" }] },
+      { tab: "scene", group: "氛圍", key: "detail", label: "裝飾細節 (Detail)", safety: "safe", options: [{ zh: "復古風格", en: "vintage style" }, { zh: "色彩繽紛", en: "colorful" }, { zh: "下午茶", en: "afternoon tea" }, { zh: "數位產品", en: "digital products" }, { zh: "毛毯抱枕", en: "blanket and pillows" }, { zh: "鏡子", en: "mirrors decor" }, { zh: "燭光", en: "candlelight" }, { zh: "花卉擺設", en: "flower arrangement" }, { zh: "書籍堆疊", en: "stacks of books" }, { zh: "影音設備", en: "audio video gear" }, { zh: "遊戲設備", en: "gaming setup" }, { zh: "旅行裝備", en: "luggage" }, { zh: "文具書包", en: "stationery school bag" }, { zh: "亂的床單", en: "messy sheets" }, { zh: "陷入床墊", en: "sinking into mattress" }] },
+      { tab: "scene", group: "氛圍", key: "weather", label: "天氣 (Weather)", safety: "safe", options: [{ zh: "晴天", en: "sunny" }, { zh: "自然光", en: "natural lighting" }, { zh: "雨天", en: "rainy" }, { zh: "陰天", en: "overcast" }, { zh: "下雪", en: "snowy" }] },
+      { tab: "scene", group: "氛圍", key: "lighting", label: "光影 (Lighting)", safety: "safe", options: [{ zh: "電影光", en: "cinematic lighting" }, { zh: "攝影背光燈", en: "rim light" }, { zh: "倫勃朗光", en: "Rembrandt lighting" }, { zh: "體積丁達爾光", en: "volumetric lighting" }, { zh: "霓虹光", en: "neon lighting" }, { zh: "自然窗光", en: "natural window light" }, { zh: "黃金時刻逆光", en: "golden hour backlighting" }, { zh: "樹影光斑", en: "dappled light" }, { zh: "陰鬱氛圍", en: "moody lighting" }, { zh: "蠟燭光", en: "candlelight" }, { zh: "電影日光", en: "cinematic daylight" }] },
+      { tab: "scene", group: "質感疊加", key: "texture", label: "質感疊加 (Texture)", safety: "safe", options: [{ zh: "頭髮微濕", en: "wet hair" }, { zh: "霧氣蒸騰", en: "steamy mist" }, { zh: "出浴質感", en: "fresh out of bath" }, { zh: "油光", en: "oily skin sheen" }, { zh: "雨水滑落", en: "raindrops on skin" }, { zh: "濕身汗水", en: "wet sweat" }, { zh: "水波光影", en: "water ripple light" }, { zh: "閃粉亮片", en: "glitter" }, { zh: "冰霜附著", en: "frost" }, { zh: "雞皮疙瘩", en: "goosebumps" }, { zh: "微醺泛紅", en: "flushed cheeks" }, { zh: "螢光發光", en: "bioluminescent glow" }] },
+      { tab: "camera", group: "鏡頭參數", key: "lens", label: "焦段 (Lens)", safety: "safe", options: [{ zh: "廣角風景", en: "wide angle 24mm" }, { zh: "標準50mm", en: "standard 50mm" }, { zh: "人像85mm", en: "85mm portrait" }, { zh: "長焦", en: "telephoto" }, { zh: "魚眼", en: "fish-eye" }, { zh: "微距", en: "macro" }, { zh: "自拍手機", en: "selfie phone camera" }, { zh: "定焦鏡", en: "prime lens" }, { zh: "變焦鏡", en: "zoom lens" }, { zh: "餅乾鏡", en: "pancake lens" }, { zh: "電影寬螢幕", en: "anamorphic lens" }, { zh: "移軸鏡", en: "tilt-shift lens" }, { zh: "分割透鏡", en: "split diopter" }] },
+      { tab: "camera", group: "鏡頭參數", key: "aperture", label: "光圈 (Aperture)", safety: "safe", options: [{ zh: "f/1.6 極淺景深", en: "f/1.6 shallow depth of field" }, { zh: "f/1.8 散景", en: "f/1.8 strong bokeh" }, { zh: "f/2.8 人像", en: "f/2.8 portrait focus" }, { zh: "f/5.6 街拍", en: "f/5.6 street" }, { zh: "f/8 風景建築", en: "f/8 landscape architecture" }, { zh: "f/11 深景深", en: "f/11 deep depth of field" }, { zh: "f/22 全景深", en: "f/22 starburst" }] },
+      { tab: "camera", group: "鏡頭參數", key: "composition", label: "構圖 (Composition)", safety: "safe", options: [{ zh: "三分構圖", en: "rule of thirds" }, { zh: "中心構圖", en: "central composition" }, { zh: "對稱", en: "symmetry" }, { zh: "引導線", en: "leading lines" }, { zh: "框架構圖", en: "framing" }, { zh: "黃金比例", en: "golden ratio" }, { zh: "對角線", en: "diagonal composition" }, { zh: "填滿畫面", en: "fill the frame" }, { zh: "負空間", en: "negative space" }, { zh: "前景焦點", en: "foreground interest" }, { zh: "背景模糊", en: "background blur" }, { zh: "剪影", en: "silhouette" }, { zh: "反射影像", en: "reflection" }, { zh: "重疊元素", en: "overlapping elements" }, { zh: "重複構圖", en: "repetition" }, { zh: "放射均衡", en: "radial balance" }, { zh: "不對稱平衡", en: "asymmetrical balance" }, { zh: "三角構圖", en: "triangular composition" }] },
+      { tab: "camera", group: "鏡頭參數", key: "shot", label: "景別 (Shot)", safety: "safe", options: [{ zh: "極特寫", en: "extreme close-up" }, { zh: "大特寫", en: "big close-up" }, { zh: "特寫", en: "close-up shot" }, { zh: "中近景", en: "medium close-up" }, { zh: "胸景", en: "bust shot" }, { zh: "腰景", en: "waist shot" }, { zh: "中景", en: "medium shot" }, { zh: "七分身牛仔景", en: "cowboy shot" }, { zh: "膝蓋景", en: "knee shot" }, { zh: "全身", en: "full body shot" }, { zh: "遠景", en: "long shot" }, { zh: "大遠景", en: "extreme long shot" }, { zh: "過肩景", en: "over the shoulder shot" }, { zh: "空中攝影", en: "aerial photography" }, { zh: "聚焦美腿", en: "focus on legs" }, { zh: "聚焦美足", en: "focus on feet" }] },
+      { tab: "camera", group: "風格效果", key: "angle", label: "視角 (Angle)", safety: "safe", options: [{ zh: "垂直俯拍", en: "top-down" }, { zh: "平視", en: "eye-level shot" }, { zh: "3/4 角度", en: "three-quarters view" }, { zh: "側面90度", en: "side view" }, { zh: "高角度俯拍", en: "high angle" }, { zh: "低角度仰拍", en: "low angle" }, { zh: "蟲視角", en: "worms-eye view" }, { zh: "背面", en: "back view" }, { zh: "荷蘭角", en: "dutch angle" }, { zh: "鳥瞰", en: "birds eye view" }, { zh: "俯視", en: "overhead shot" }, { zh: "傾斜角度", en: "canted angle" }, { zh: "傾斜地平線", en: "tilted horizon" }, { zh: "搖鏡", en: "panning shot" }, { zh: "自下而上", en: "bottom-up perspective" }, { zh: "第一人稱", en: "POV first person" }, { zh: "跨網格POV", en: "POV across table" }, { zh: "第一手資料", en: "POV hands" }] },
+      { tab: "camera", group: "風格效果", key: "style", label: "風格 (Style)", safety: "safe", options: [{ zh: "寫實", en: "photorealistic" }, { zh: "超詳細", en: "ultra-detailed photo" }, { zh: "Fashion時尚寫真", en: "high fashion editorial" }, { zh: "iPhone手機攝影", en: "iPhone IG photo" }, { zh: "網紅自拍", en: "influencer selfie" }, { zh: "日系寫真", en: "Japanese photobook" }, { zh: "日系甜美", en: "Japanese sweet style" }, { zh: "空氣感", en: "airy photography" }, { zh: "無印良品風", en: "Muji style" }, { zh: "小清新", en: "fresh and light" }, { zh: "文青風", en: "artistic youth" }, { zh: "電影感", en: "cinematic" }, { zh: "電影色調", en: "cinematic color grading" }, { zh: "王家衛風", en: "Wong Kar-wai style" }, { zh: "底片相機", en: "film camera" }, { zh: "LOMO風", en: "LOMO style" }, { zh: "拍立得", en: "raw polaroid photo" }, { zh: "咖啡館美學", en: "cafe aesthetic" }, { zh: "暗黑", en: "dark aesthetic" }, { zh: "賽博龐克", en: "cyberpunk" }, { zh: "超現實", en: "surrealism" }, { zh: "夢幻洛菲", en: "dreamy lofi" }], custom: true },
+      { tab: "camera", group: "風格效果", key: "effects", label: "特殊效果 (Effects)", safety: "safe", options: [{ zh: "柔和夢幻", en: "soft dreamy" }, { zh: "膠片顆粒", en: "film grain" }, { zh: "銀鹽黑白", en: "black and white film" }, { zh: "光暈", en: "glow effect" }, { zh: "霧氣瀰漫", en: "foggy" }, { zh: "高對比", en: "high contrast" }, { zh: "偏光鏡", en: "circular polarizer" }, { zh: "減光鏡", en: "ND filter" }, { zh: "紅外線濾鏡", en: "infrared filter" }, { zh: "柔焦", en: "soft focus" }, { zh: "色調效果", en: "tinted lens" }, { zh: "光畫", en: "light painting" }, { zh: "借位攝影", en: "forced perspective" }, { zh: "散景", en: "bokeh" }, { zh: "高速攝影", en: "high-speed photo" }, { zh: "移軸攝影", en: "tilt-shift" }, { zh: "雙重曝光", en: "double exposure" }, { zh: "HDR", en: "HDR" }, { zh: "延時攝影", en: "time-lapse" }, { zh: "長時間曝光", en: "long exposure" }, { zh: "幽靈影像", en: "ghosting" }, { zh: "自由鏡頭", en: "free lensing" }, { zh: "中途曝光", en: "solarization" }, { zh: "交叉沖洗", en: "cross-processing" }, { zh: "反轉顏色", en: "inverted colors" }, { zh: "平版印刷", en: "lith printing" }, { zh: "針孔攝影", en: "pinhole" }, { zh: "寶麗來轉印", en: "polaroid transfer" }, { zh: "濕版火棉膠", en: "wet plate collodion" }, { zh: "LOMO攝影", en: "lomography" }] },
+      { tab: "camera", group: "風格效果", key: "ratio", label: "圖片尺寸 (Ratio)", safety: "safe", options: [{ zh: "9:16 直式短影音", en: "--ar 9:16" }, { zh: "4:5 IG直文", en: "--ar 4:5" }, { zh: "2:3 標準直式", en: "--ar 2:3" }, { zh: "1:1 正方形", en: "--ar 1:1" }, { zh: "3:2 標準橫式", en: "--ar 3:2" }, { zh: "5:4 傳統螢幕", en: "--ar 5:4" }, { zh: "16:9 寬螢幕", en: "--ar 16:9" }, { zh: "21:9 電影寬", en: "--ar 21:9" }] },
+    ];
+
+    const TABS = [
+      { id: "character", label: "👤 人物" },
+      { id: "outfit",    label: "👕 穿搭" },
+      { id: "action",    label: "🏃 動作" },
+      { id: "scene",     label: "🏞 場景" },
+      { id: "camera",    label: "📷 鏡頭" }
+    ];
+
+    // safety 等級包含關係
+    const SAFETY_ALLOW = {
+      safe:     ["safe"],
+      standard: ["safe", "standard"],
+      nsfw:     ["safe", "standard", "nsfw"]
+    };
+
+    // ============ 狀態 ============
+    let state = {
+      tab: "character",
+      safety: "safe",
+      template: "midjourney",
+      values: {},      // { fieldKey: enValue }
+      customs: {},     // { fieldKey: customString }
+      name: "Protagonist"
+    };
+    let history = JSON.parse(localStorage.getItem("history_v0") || "[]");
+    let bookmarks = JSON.parse(localStorage.getItem("bookmarks_v0") || "{}");
+
+    // ============ 共用工具 ============
+    const allowedFields = () => {
+      const allow = SAFETY_ALLOW[state.safety];
+      return FIELDS.filter(f => !f.safety || allow.includes(f.safety));
+    };
+    const fieldByKey = key => FIELDS.find(f => f.key === key);
+    const valOf = key => state.values[key] || "";
+    const customOf = key => (state.customs[key] || "").trim();
+
+    // 把單一欄位的「下拉值 + 自訂值」合併成一個字串陣列
+    const merged = key => {
+      const arr = [];
+      if (valOf(key)) arr.push(valOf(key));
+      if (customOf(key)) arr.push(customOf(key));
+      return arr;
+    };
+
+    // ============ 渲染 ============
+    function renderTabs() {
+      const el = document.getElementById("tabs");
+      el.innerHTML = TABS.map(t =>
+        `<div class="tab ${t.id === state.tab ? 'active' : ''}" data-tab="${t.id}">${t.label}</div>`
+      ).join("");
+      el.querySelectorAll(".tab").forEach(tabEl => {
+        tabEl.onclick = () => {
+          state.tab = tabEl.dataset.tab;
+          renderTabs();
+          renderTabContent();
+        };
+      });
+    }
+
+    function renderTabContent() {
+      const fields = allowedFields().filter(f => f.tab === state.tab);
+      const groups = {};
+      fields.forEach(f => { (groups[f.group] = groups[f.group] || []).push(f); });
+
+      const el = document.getElementById("tabContent");
+      const html = Object.entries(groups).map(([group, gFields]) => `
+        <fieldset>
+          <legend>${group}</legend>
+          <div class="field-grid">
+            ${gFields.map(renderField).join("")}
+          </div>
+        </fieldset>
+      `).join("");
+      el.innerHTML = html || `<div class="empty-tip">這個分頁在當前安全模式下沒有可用欄位。<br/>切換到「標準」或「NSFW」可看到更多。</div>`;
+
+      el.querySelectorAll("[data-field]").forEach(input => {
+        const key = input.dataset.field;
+        const role = input.dataset.role;
+        const handler = (e) => {
+          if (role === "custom")    state.customs[key] = e.target.value;
+          else if (role === "name") state.name = e.target.value || "Protagonist";
+          else                       state.values[key] = e.target.value;
+          renderPrompt();
+        };
+        input.addEventListener("change", handler);
+        input.addEventListener("input", handler);
+      });
+    }
+
+    function renderField(f) {
+      if (f.type === "text") {
+        return `<div class="field">
+          <label>${f.label}</label>
+          <input type="text" data-field="${f.key}" data-role="name" value="${escapeAttr(state.name)}" placeholder="${f.placeholder || ''}" />
+        </div>`;
+      }
+      const opts = ['<option value="">-- 無 --</option>']
+        .concat(f.options.map(o =>
+          `<option value="${escapeAttr(o.en)}" ${state.values[f.key] === o.en ? 'selected' : ''}>${o.zh} (${o.en})</option>`
+        ));
+      return `<div class="field">
+        <label>${f.label}</label>
+        <select data-field="${f.key}">${opts.join("")}</select>
+        ${f.custom ? `<input class="custom-input" type="text" data-field="${f.key}" data-role="custom" placeholder="自訂…" value="${escapeAttr(state.customs[f.key] || '')}" />` : ''}
+      </div>`;
+    }
+
+    function escapeAttr(s) {
+      return String(s ?? "").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+
+    // ============ Prompt 拼接 ============
+    function gather() {
+      const allow = SAFETY_ALLOW[state.safety];
+      const get = key => {
+        const f = fieldByKey(key);
+        if (!f) return [];
+        if (f.safety && !allow.includes(f.safety)) return [];
+        const arr = [];
+        if (state.values[key]) arr.push(state.values[key]);
+        const c = (state.customs[key] || "").trim();
+        if (c) arr.push(c);
+        return arr;
+      };
+      const flat = (...keys) => keys.flatMap(k => get(k));
+
+      // 把上身/下身的顏色+材質+花紋串到主件之前: "black cotton plaid t-shirt"
+      const compose = (mainKey, colorKey, matKey, patKey) => {
+        const main = get(mainKey);
+        if (!main.length) {
+          // 沒有主件時把單獨的顏色/材質/花紋也輸出
+          return [...get(colorKey), ...get(matKey), ...get(patKey)];
+        }
+        const mods = [...get(colorKey), ...get(matKey), ...get(patKey)].filter(Boolean);
+        return main.map(m => mods.length ? mods.join(" ") + " " + m : m);
+      };
+
+      return {
+        name: state.name,
+        gender: get("gender")[0] || "",
+        age: get("age")[0] || "",
+        race: get("race")[0] || "",
+        height: get("height")[0] || "",
+        build: get("build")[0] || "",
+        profession: get("profession").join(", "),
+
+        appearance: flat(
+          "hair_style","hair_color","skin","tattoo",
+          "expression","eye_color","eye_shape",
+          "face_shape","forehead","cheeks","chin",
+          "ears","nose_shape","mouth",
+          "makeup_base","eyebrows","lip_eye"
+        ),
+
+        measurements: flat("bust","waist","hip"),
+
+        clothing: [
+          ...get("costume"),
+          ...get("outfit_fit"),
+          ...get("headwear"),
+          ...get("jewelry"),
+          ...get("hands"),
+          ...get("bag"),
+          ...get("outerwear"),
+          ...compose("top","top_color","top_material","top_pattern"),
+          ...compose("bottom","bottom_color","bottom_material","bottom_pattern"),
+          ...get("shoes"),
+          ...get("socks")
+        ].filter(Boolean),
+
+        action: flat("pose","activity"),
+
+        scene: flat("location","time","weather"),
+        sceneDetail: flat("props","detail","texture"),
+
+        lighting: get("lighting")[0] || "",
+
+        camera: flat("lens","aperture","composition","shot","angle"),
+        shot: get("shot")[0] || "",
+
+        style: flat("style","effects"),
+
+        ratio: get("ratio")[0] || "",
+        expressionRaw: get("expression")[0] || ""
+      };
+    }
+
+    function buildPrompt() {
+      const v = gather();
+      const personDesc = [v.age, v.race, v.gender].filter(Boolean).join(" ");
+      const bodyDesc   = [v.height, v.build, ...v.measurements].filter(Boolean).join(", ");
+      const appearance = v.appearance.join(", ");
+      const clothing   = v.clothing.join(", ");
+      const action     = v.action.join(", ");
+      const scene      = v.scene.join(", ");
+      const sceneDetail= v.sceneDetail.join(", ");
+      const camera     = v.camera.join(", ");
+      const style      = v.style.join(", ");
+      const profession = v.profession || "";
+
+      switch (state.template) {
+        case "midjourney": {
+          const parts = [
+            style || "photorealistic, high fashion",
+            camera || null,
+            `${v.shot || "portrait"} of ${v.name}${personDesc ? `, ${personDesc}` : ''}`,
+            profession ? `working as ${profession}` : null,
+            appearance,
+            bodyDesc,
+            clothing ? `wearing ${clothing}` : null,
+            action,
+            scene ? `in ${scene}` : null,
+            sceneDetail,
+            v.lighting
+          ].filter(Boolean);
+          return parts.join(", ") + (v.ratio ? ` ${v.ratio}` : "");
+        }
+        case "sd_a1111": {
+          const parts = [
+            "(masterpiece:1.2), (best quality:1.2), highly detailed",
+            personDesc, appearance, bodyDesc, clothing, action,
+            scene, sceneDetail, v.lighting, camera, style
+          ].filter(Boolean);
+          return parts.join(", ");
+        }
+        case "nai": {
+          const subject = [personDesc, appearance, bodyDesc, clothing, action].filter(Boolean).join(", ");
+          const env = [scene, sceneDetail, v.lighting, camera, style].filter(Boolean).join(", ");
+          return `{{masterpiece}}, {{best quality}}, ${subject} BREAK ${env}`;
+        }
+        case "sora": {
+          return `A ${v.shot || "medium shot"} cinematic video clip: ${v.name}` +
+                 `${personDesc ? `, a ${personDesc}` : ''}` +
+                 `${appearance ? `, ${appearance}` : ''}` +
+                 `${clothing ? `, wearing ${clothing}` : ''}. ` +
+                 `${action ? `They are ${action}. ` : ''}` +
+                 `Scene: ${scene || 'a quiet space'}${sceneDetail ? `, ${sceneDetail}` : ''}, ${v.lighting || 'natural light'}. ` +
+                 `Camera: ${camera || 'standard 50mm, eye-level'}. ` +
+                 `Style: ${style || 'cinematic, photorealistic'}. ` +
+                 `Duration ~6s, smooth handheld motion, 24fps.`;
+        }
+        case "elevenlabs": {
+          return `Voice profile — ${v.age || 'adult'} ${v.gender || 'person'}` +
+                 `${v.race ? `, ${v.race} accent` : ''}. ` +
+                 `Tone: ${v.expressionRaw || 'neutral'}, warm conversational delivery. ` +
+                 `Scene context: ${scene || 'indoors, ambient'}. ` +
+                 `Sample line: "Hi, I'm ${v.name}. ${profession ? `I work as ${profession}.` : ''}"`;
+        }
+        case "character_card": {
+          const lines = [
+            `# 角色名稱：${v.name}`,
+            `## 基本資料`,
+            `- 性別：${v.gender || '未設定'}`,
+            `- 年齡：${v.age || '未設定'}`,
+            `- 種族/國籍：${v.race || '未設定'}`,
+            `- 體型：${[v.height, v.build].filter(Boolean).join('、') || '未設定'}`,
+            `- 職業：${profession || '未設定'}`,
+            v.measurements.length ? `- 三圍：${v.measurements.join('、')}` : null,
+            ``,
+            `## 外貌`,
+            appearance ? `- ${appearance}` : `- (未設定)`,
+            ``,
+            `## 穿著`,
+            clothing ? `- ${clothing}` : `- (未設定)`,
+            ``,
+            `## 當前狀態 / 場景`,
+            action ? `- 動作：${action}` : null,
+            scene ? `- 場景：${scene}` : null,
+            sceneDetail ? `- 場景細節：${sceneDetail}` : null,
+            v.lighting ? `- 光線：${v.lighting}` : null,
+            ``,
+            `## 鏡頭與風格`,
+            camera ? `- 鏡頭：${camera}` : null,
+            style ? `- 風格：${style}` : null,
+            ``,
+            `## 角色扮演指令`,
+            `請以這位角色的身份回應使用者，保持人格一致、外貌與背景設定不變。`
+          ].filter(l => l !== null);
+          return lines.join("\n");
+        }
+      }
+      return "";
+    }
+
+    function renderPrompt() {
+      const out = buildPrompt();
+      document.getElementById("promptOutput").textContent = out || "(請選擇選項)";
+    }
+
+    // ============ 快捷功能 ============
+    function clearAll() {
+      state.values = {};
+      state.customs = {};
+      state.name = "Protagonist";
+      renderTabContent();
+      renderPrompt();
+      toast("🧹 已清除");
+    }
+
+    function randomAll() {
+      const allowed = SAFETY_ALLOW[state.safety];
+      FIELDS.forEach(f => {
+        if (f.type === "text") return;
+        if (f.safety && !allowed.includes(f.safety)) {
+          delete state.values[f.key];
+          return;
+        }
+        if (Math.random() < 0.30) {
+          const o = f.options[Math.floor(Math.random() * f.options.length)];
+          state.values[f.key] = o.en;
+        } else {
+          state.values[f.key] = "";
+        }
+      });
+      renderTabContent();
+      renderPrompt();
+      toast("🎲 已隨機");
+    }
+
+    // ============ 書籤 ============
+    function renderBookmarks() {
+      const sel = document.getElementById("bookmarkSelect");
+      const keys = Object.keys(bookmarks);
+      sel.innerHTML = `<option value="">-- 選擇書籤 --</option>` +
+        keys.map(k => `<option value="${escapeAttr(k)}">${escapeAttr(k)}</option>`).join("");
+    }
+    function saveBookmark() {
+      const nameInput = document.getElementById("bookmarkName").value.trim();
+      const name = nameInput || state.name || `角色_${Date.now()}`;
+      bookmarks[name] = {
+        values: { ...state.values },
+        customs: { ...state.customs },
+        name: state.name
+      };
+      localStorage.setItem("bookmarks_v0", JSON.stringify(bookmarks));
+      renderBookmarks();
+      toast("✅ 已儲存：" + name);
+    }
+    function loadBookmark() {
+      const name = document.getElementById("bookmarkSelect").value;
+      if (!name || !bookmarks[name]) { toast("⚠️ 請先選書籤"); return; }
+      const b = bookmarks[name];
+      state.values = { ...(b.values || {}) };
+      state.customs = { ...(b.customs || {}) };
+      state.name = b.name || "Protagonist";
+      renderTabContent();
+      renderPrompt();
+      toast("📥 已載入：" + name);
+    }
+    function deleteBookmark() {
+      const name = document.getElementById("bookmarkSelect").value;
+      if (!name) { toast("⚠️ 請先選書籤"); return; }
+      delete bookmarks[name];
+      localStorage.setItem("bookmarks_v0", JSON.stringify(bookmarks));
+      renderBookmarks();
+      toast("🗑 已刪除：" + name);
+    }
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(bookmarks, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prompt_bookmarks_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("⬇ 已匯出 JSON");
+    }
+    function importJson(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          bookmarks = { ...bookmarks, ...data };
+          localStorage.setItem("bookmarks_v0", JSON.stringify(bookmarks));
+          renderBookmarks();
+          toast("⬆ 已匯入");
+        } catch (err) {
+          toast("❌ JSON 格式錯誤");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ============ 歷史 ============
+    function renderHistory() {
+      const el = document.getElementById("historyList");
+      el.innerHTML = history.length
+        ? history.map((h, i) => `<div class="history-item" data-idx="${i}" title="點擊重新複製">${escapeAttr(h.slice(0, 140))}…</div>`).join("")
+        : `<div style="color:var(--text-dim);font-size:.8rem">尚無紀錄</div>`;
+      el.querySelectorAll(".history-item").forEach(it => {
+        it.onclick = () => {
+          navigator.clipboard.writeText(history[it.dataset.idx]).then(() => toast("📋 已重新複製"));
+        };
+      });
+    }
+    function pushHistory(p) {
+      if (!p || p === "(請選擇選項)") return;
+      history.unshift(p);
+      if (history.length > 20) history = history.slice(0, 20);
+      localStorage.setItem("history_v0", JSON.stringify(history));
+      renderHistory();
+    }
+
+    // ============ 複製 ============
+    function copy(withNeg = false) {
+      let p = buildPrompt();
+      if (!p) { toast("⚠️ 沒有內容"); return; }
+      if (withNeg) {
+        const neg = document.getElementById("negativeText").value.trim();
+        if (neg) p += `\n\nNegative prompt: ${neg}`;
+      }
+      navigator.clipboard.writeText(p).then(() => {
+        toast(withNeg ? "📋 已複製 (含負面詞)" : "📋 已複製");
+        pushHistory(p);
+      });
+    }
+
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+
+    // ============ 主題 ============
+    function toggleTheme() {
+      const cur = document.body.dataset.theme;
+      const next = cur === "dark" ? "light" : "dark";
+      document.body.dataset.theme = next;
+      document.getElementById("themeBtn").textContent = next === "dark" ? "🌙 深色" : "☀️ 淺色";
+      localStorage.setItem("theme_v0", next);
+    }
+
+    // ============ 事件綁定 ============
+    document.getElementById("themeBtn").onclick = toggleTheme;
+    document.getElementById("safetyGroup").onclick = (e) => {
+      const s = e.target.dataset.safety;
+      if (!s) return;
+      state.safety = s;
+      document.querySelectorAll("#safetyGroup button").forEach(b =>
+        b.classList.toggle("active", b.dataset.safety === s)
+      );
+      renderTabContent();
+      renderPrompt();
+    };
+    document.getElementById("templateSelect").onchange = (e) => {
+      state.template = e.target.value;
+      renderPrompt();
+    };
+    document.getElementById("clearBtn").onclick = clearAll;
+    document.getElementById("randomBtn").onclick = randomAll;
+    document.getElementById("saveBookmark").onclick = saveBookmark;
+    document.getElementById("loadBookmark").onclick = loadBookmark;
+    document.getElementById("deleteBookmark").onclick = deleteBookmark;
+    document.getElementById("exportJson").onclick = exportJson;
+    document.getElementById("importJsonBtn").onclick = () => document.getElementById("importFile").click();
+    document.getElementById("importFile").onchange = (e) => {
+      if (e.target.files[0]) importJson(e.target.files[0]);
+      e.target.value = "";
+    };
+    document.getElementById("copyBtn").onclick = () => copy(false);
+    document.getElementById("copyWithNeg").onclick = () => copy(true);
+    document.getElementById("clearHistory").onclick = (e) => {
+      e.stopPropagation();
+      history = [];
+      localStorage.removeItem("history_v0");
+      renderHistory();
+      toast("🧹 歷史已清");
+    };
+
+    // ============ 啟動 ============
+    const savedTheme = localStorage.getItem("theme_v0");
+    if (savedTheme) {
+      document.body.dataset.theme = savedTheme;
+      document.getElementById("themeBtn").textContent = savedTheme === "dark" ? "🌙 深色" : "☀️ 淺色";
+    }
+    renderTabs();
+    renderTabContent();
+    renderPrompt();
+    renderBookmarks();
+    renderHistory();
+  </script>
+</body>
+</html>
