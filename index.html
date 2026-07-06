@@ -3,7 +3,7 @@
 <html lang="zh-Hant" data-immersive-translate-page-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>角色提示詞產生器 v1.0</title>
+  <title>角色提示詞產生器 v1.1</title>
   <style>
     :root {
       --bg: #0f1422;
@@ -312,7 +312,7 @@
   <header>
     <div class="logo">
       <h1>🎨 角色提示詞產生器</h1>
-      <p>v1.0 — AI 繪圖 Prompt 工廠 · 中英雙語輸出</p>
+      <p>v1.1 — AI 繪圖 Prompt 工廠 · 中英雙語輸出</p>
     </div>
     <div class="toolbar">
       <button id="themeBtn">🌙 深色</button>
@@ -524,7 +524,7 @@
     </aside>
   </main>
 
-  <footer>v1.0 · 新增人物設定三視圖 · 種族擴充至 120 項 · 1400+ tags · 純 HTML/CSS/JS</footer>
+  <footer>v1.1 · 人物設定三視圖升級為 Character Sheet 版式 · 種族擴充至 120 項 · 1400+ tags · 純 HTML/CSS/JS</footer>
   <div class="toast" id="toast">🎲 已隨機</div>
 
   <script>
@@ -894,13 +894,17 @@
             bodyDesc,
             clothing ? `wearing ${clothing}` : null
           ].filter(Boolean).join(", ");
-          return `Create a character reference turnaround sheet of ${v.name}` +
-                 `${charDesc ? `, ${charDesc}` : ''}. ` +
-                 `A-pose, maintaining full character details and realism, plain white background, ` +
-                 `including three views of the character (front view, side view, back view), ` +
-                 `with annotated enlarged close-up details of each body part ` +
-                 `(hand close-up, face close-up, facial features close-up).` +
-                 (style ? ` Style: ${style}.` : "");
+          const charPrompt = charDesc ? `${v.name}, ${charDesc}` : v.name;
+          return `Using the following character prompt "${charPrompt}", design a character reference sheet (Character Sheet). ` +
+                 `8K ultra-realistic, photorealistic real-person texture, soft studio lighting, pure white background, ` +
+                 `extremely detailed, sharp and clear, well-organized composition, complete information, no extra watermarks.\n` +
+                 `Layout requirements:\n` +
+                 `Top-left area: character face close-up, with the English title "Details and Color Palette" above it\n` +
+                 `Middle-left area: complete color palette module, each swatch labeled with its color name, HEX value and RGB value\n` +
+                 `Center main area: full-body standing poses of the character in front, side and back views, natural relaxed model pose\n` +
+                 `Bottom-left area: 4 square detail close-up thumbnails showing clothing / accessory / material details\n` +
+                 `Right area: height-proportion reference ruler with labeled landmarks such as "Ankle", with total height scale and metric scale\n` +
+                 `General requirements: real human, shot on ARRI Mini cinema camera`;
         }
       }
       return "";
@@ -1006,11 +1010,16 @@
             bodyDesc ? `體型：${bodyDesc}` : "",
             clothing ? `穿著 ${clothing}` : ""
           ].filter(Boolean).join("，");
-          return `創作 ${v.name}${charDesc ? `（${charDesc}）` : ""} 的人物三視圖，` +
-                 `A-pose，保持人物細節和真實感，白色底，` +
-                 `包含人物三視圖（正面，側面，背面），` +
-                 `並在三視圖上標注放大各個部位細節（手部特寫，臉部特寫，五官特寫）。` +
-                 (style ? `風格：${style}。` : "");
+          const charPrompt = charDesc ? `${v.name}，${charDesc}` : v.name;
+          return `使用以下人物提示詞『${charPrompt}』設計參考表（Character Sheet），` +
+                 `8K超寫實，寫實照片真人質感，柔和影棚柔光，純白背景，細節拉滿，清晰銳利，構圖規整，信息完整，無多余水印。\n` +
+                 `布局要求：\n` +
+                 `左上角區域：人物臉部特寫，上方標注英文標題「Details and Color Palette」\n` +
+                 `左側中部區域：完整色卡模塊，每個色塊標注對應顏色名稱、HEX色值、RGB色值\n` +
+                 `中間主體區域：人物正面、側面、背面三視角全身站姿，自然放松的模特姿態\n` +
+                 `左下角區域：4個方形細節特寫小圖，展示服裝/配飾/材質細節\n` +
+                 `右側區域：身高比例參考標尺，標注「Ankle」等比例節點，帶總身高刻度與米制刻度\n` +
+                 `通用要求：真實人物，arrimini 電影機拍攝`;
         }
       }
       return "";
