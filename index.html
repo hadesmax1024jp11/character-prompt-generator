@@ -3,7 +3,7 @@
 <html lang="zh-Hant" data-immersive-translate-page-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>角色提示詞產生器 v1.1</title>
+  <title>角色提示詞產生器 v1.2</title>
   <style>
     :root {
       --bg: #0f1422;
@@ -312,7 +312,7 @@
   <header>
     <div class="logo">
       <h1>🎨 角色提示詞產生器</h1>
-      <p>v1.1 — AI 繪圖 Prompt 工廠 · 中英雙語輸出</p>
+      <p>v1.2 — AI 繪圖 Prompt 工廠 · 中英雙語輸出</p>
     </div>
     <div class="toolbar">
       <button id="themeBtn">🌙 深色</button>
@@ -524,7 +524,7 @@
     </aside>
   </main>
 
-  <footer>v1.1 · 人物設定三視圖升級為 Character Sheet 版式 · 種族擴充至 120 項 · 1400+ tags · 純 HTML/CSS/JS</footer>
+  <footer>v1.2 · 新增 NSFW 專屬欄位（18+ 年齡防護） · 種族擴充至 120 項 · 1400+ tags · 純 HTML/CSS/JS</footer>
   <div class="toast" id="toast">🎲 已隨機</div>
 
   <script>
@@ -592,7 +592,17 @@
       { tab: "camera", group: "風格效果", key: "style", label: "風格 (Style)", safety: "safe", options: [{ zh: "寫實", en: "photorealistic" }, { zh: "超詳細", en: "ultra-detailed photo" }, { zh: "Fashion時尚寫真", en: "high fashion editorial" }, { zh: "iPhone手機攝影", en: "iPhone IG photo" }, { zh: "網紅自拍", en: "influencer selfie" }, { zh: "日系寫真", en: "Japanese photobook" }, { zh: "日系甜美", en: "Japanese sweet style" }, { zh: "空氣感", en: "airy photography" }, { zh: "無印良品風", en: "Muji style" }, { zh: "小清新", en: "fresh and light" }, { zh: "文青風", en: "artistic youth" }, { zh: "電影感", en: "cinematic" }, { zh: "電影色調", en: "cinematic color grading" }, { zh: "王家衛風", en: "Wong Kar-wai style" }, { zh: "底片相機", en: "film camera" }, { zh: "LOMO風", en: "LOMO style" }, { zh: "拍立得", en: "raw polaroid photo" }, { zh: "咖啡館美學", en: "cafe aesthetic" }, { zh: "暗黑", en: "dark aesthetic" }, { zh: "賽博龐克", en: "cyberpunk" }, { zh: "超現實", en: "surrealism" }, { zh: "夢幻洛菲", en: "dreamy lofi" }], custom: true },
       { tab: "camera", group: "風格效果", key: "effects", label: "特殊效果 (Effects)", safety: "safe", options: [{ zh: "柔和夢幻", en: "soft dreamy" }, { zh: "膠片顆粒", en: "film grain" }, { zh: "銀鹽黑白", en: "black and white film" }, { zh: "光暈", en: "glow effect" }, { zh: "霧氣瀰漫", en: "foggy" }, { zh: "高對比", en: "high contrast" }, { zh: "偏光鏡", en: "circular polarizer" }, { zh: "減光鏡", en: "ND filter" }, { zh: "紅外線濾鏡", en: "infrared filter" }, { zh: "柔焦", en: "soft focus" }, { zh: "色調效果", en: "tinted lens" }, { zh: "光畫", en: "light painting" }, { zh: "借位攝影", en: "forced perspective" }, { zh: "散景", en: "bokeh" }, { zh: "高速攝影", en: "high-speed photo" }, { zh: "移軸攝影", en: "tilt-shift" }, { zh: "雙重曝光", en: "double exposure" }, { zh: "HDR", en: "HDR" }, { zh: "延時攝影", en: "time-lapse" }, { zh: "長時間曝光", en: "long exposure" }, { zh: "幽靈影像", en: "ghosting" }, { zh: "自由鏡頭", en: "free lensing" }, { zh: "中途曝光", en: "solarization" }, { zh: "交叉沖洗", en: "cross-processing" }, { zh: "反轉顏色", en: "inverted colors" }, { zh: "平版印刷", en: "lith printing" }, { zh: "針孔攝影", en: "pinhole" }, { zh: "寶麗來轉印", en: "polaroid transfer" }, { zh: "濕版火棉膠", en: "wet plate collodion" }, { zh: "LOMO攝影", en: "lomography" }] },
       { tab: "camera", group: "風格效果", key: "ratio", label: "圖片尺寸 (Ratio)", safety: "safe", options: [{ zh: "9:16 直式短影音", en: "--ar 9:16" }, { zh: "4:5 IG直文", en: "--ar 4:5" }, { zh: "2:3 標準直式", en: "--ar 2:3" }, { zh: "1:1 正方形", en: "--ar 1:1" }, { zh: "3:2 標準橫式", en: "--ar 3:2" }, { zh: "5:4 傳統螢幕", en: "--ar 5:4" }, { zh: "16:9 寬螢幕", en: "--ar 16:9" }, { zh: "21:9 電影寬", en: "--ar 21:9" }] },
+      // ===== v1.2 NSFW 專屬欄位（性感/私房寫真等級，僅 NSFW 模式可見）=====
+      { tab: "character", group: "性感氛圍 (NSFW)", key: "allure", label: "性感氛圍 (Allure)", safety: "nsfw", options: [{ zh: "魅惑眼神", en: "seductive gaze" }, { zh: "迷離電眼", en: "bedroom eyes" }, { zh: "慵懶嫵媚表情", en: "sultry languid expression" }, { zh: "輕咬下唇", en: "biting lip" }, { zh: "微張雙唇", en: "parted lips" }, { zh: "嬌羞臉紅", en: "shy blushing" }, { zh: "撩人微笑", en: "alluring smile" }, { zh: "濕髮", en: "wet hair" }, { zh: "水光肌", en: "glossy dewy skin" }, { zh: "精緻鎖骨", en: "elegant collarbone" }, { zh: "美人痣", en: "beauty mark" }, { zh: "香肩微露", en: "bare shoulders" }], custom: true },
+      { tab: "outfit", group: "私房穿著 (NSFW)", key: "lingerie", label: "內衣與私房穿著 (Lingerie)", safety: "nsfw", options: [{ zh: "蕾絲內衣套裝", en: "lace lingerie set" }, { zh: "黑色蕾絲內衣", en: "black lace lingerie" }, { zh: "紅色絲綢內衣", en: "red silk lingerie" }, { zh: "白色純棉內衣", en: "white cotton underwear set" }, { zh: "絲質睡裙", en: "silk babydoll nightgown" }, { zh: "緞面睡袍", en: "satin negligee" }, { zh: "透膚蕾絲罩袍", en: "sheer lace robe" }, { zh: "蕾絲連身內衣", en: "lace bodysuit" }, { zh: "蕾絲馬甲", en: "lace-trimmed corset" }, { zh: "吊襪帶配過膝絲襪", en: "garter belt with thigh-high stockings" }, { zh: "細帶比基尼", en: "string bikini" }, { zh: "連身泳裝", en: "one-piece swimsuit" }, { zh: "浴巾裹身", en: "wrapped in bath towel" }, { zh: "只穿男友襯衫", en: "wearing only an oversized boyfriend shirt" }, { zh: "高衩旗袍", en: "high-slit cheongsam" }, { zh: "兔女郎裝", en: "bunny girl costume" }, { zh: "性感女僕裝", en: "seductive maid outfit" }], custom: true },
+      { tab: "action", group: "性感姿勢 (NSFW)", key: "sexy_pose", label: "性感姿勢 (Sexy Pose)", safety: "nsfw", options: [{ zh: "慵懶躺臥床上", en: "lying languidly on bed" }, { zh: "側臥撐頭", en: "lying on side propped on elbow" }, { zh: "弓背伸展", en: "arching back gracefully" }, { zh: "回眸一笑", en: "looking back over shoulder with a smile" }, { zh: "床上跪坐", en: "kneeling on bed" }, { zh: "蹺腿而坐", en: "sitting with legs elegantly crossed" }, { zh: "懷抱枕頭", en: "hugging a pillow" }, { zh: "舉臂伸展", en: "stretching arms overhead" }, { zh: "慵懶倚牆", en: "leaning languidly against wall" }, { zh: "撩撥秀髮", en: "running fingers through hair" }, { zh: "整理絲襪", en: "adjusting stocking" }, { zh: "輕拉衣領", en: "tugging at collar teasingly" }], custom: true },
+      { tab: "scene", group: "私房場景 (NSFW)", key: "boudoir", label: "私房場景 (Boudoir Scene)", safety: "nsfw", options: [{ zh: "私房臥室", en: "boudoir bedroom" }, { zh: "絲綢床單大床", en: "large bed with silk sheets" }, { zh: "昏黃燭光", en: "dim candlelight" }, { zh: "奢華飯店套房", en: "luxury hotel suite" }, { zh: "泡泡浴缸", en: "bubble bath" }, { zh: "氤氳浴室", en: "steamy bathroom" }, { zh: "晨光透簾", en: "morning light through sheer curtains" }, { zh: "床上玫瑰花瓣", en: "rose petals on bed" }, { zh: "霓虹臥室", en: "neon-lit bedroom" }, { zh: "壁爐暖光客廳", en: "fireplace-lit lounge" }], custom: true },
+      { tab: "camera", group: "私房攝影 (NSFW)", key: "glamour", label: "私房攝影風格 (Glamour)", safety: "nsfw", options: [{ zh: "私房寫真", en: "boudoir photography" }, { zh: "魅力人像攝影", en: "glamour photography" }, { zh: "唯美私房人像", en: "artistic sensual portrait" }, { zh: "柔焦夢幻", en: "soft focus dreamy" }, { zh: "逆光剪影", en: "backlit silhouette" }, { zh: "低調光影", en: "low-key dramatic lighting" }, { zh: "底片顆粒私密氛圍", en: "film grain intimate mood" }], custom: true },
     ];
+
+    // ===== v1.2 年齡防護：標準/NSFW 模式僅允許成人年齡 =====
+    const MINOR_AGES = ["baby", "3 years old", "5 years old", "8 years old", "10 years old", "12 years old", "15 years old"];
+    const isMinorAge = v => MINOR_AGES.includes(v);
 
     const TABS = [
       { id: "character", label: "👤 人物" },
@@ -702,8 +712,13 @@
           <input type="text" data-field="${f.key}" data-role="name" value="${escapeAttr(state.name)}" placeholder="${f.placeholder || ''}" />
         </div>`;
       }
+      let fOptions = f.options;
+      // v1.2: 標準/NSFW 模式下年齡僅顯示成人選項
+      if (f.key === "age" && state.safety !== "safe") {
+        fOptions = fOptions.filter(o => !isMinorAge(o.en));
+      }
       const opts = ['<option value="">-- 無 --</option>']
-        .concat(f.options.map(o =>
+        .concat(fOptions.map(o =>
           `<option value="${escapeAttr(o.en)}" ${state.values[f.key] === o.en ? 'selected' : ''}>${o.zh} (${o.en})</option>`
         ));
       return `<div class="field">
@@ -743,10 +758,14 @@
         return main.map(m => mods.length ? mods.join(" ") + " " + m : m);
       };
 
+      // v1.2: 標準/NSFW 模式下未成年年齡一律不輸出（含書籤載入的舊資料）
+      const rawAge = get("age")[0] || "";
+      const safeAge = (state.safety !== "safe" && isMinorAge(rawAge)) ? "" : rawAge;
+
       return {
         name: state.name,
         gender: get("gender")[0] || "",
-        age: get("age")[0] || "",
+        age: safeAge,
         race: get("race")[0] || "",
         height: get("height")[0] || "",
         build: get("build")[0] || "",
@@ -757,7 +776,8 @@
           "expression","eye_color","eye_shape",
           "face_shape","forehead","cheeks","chin",
           "ears","nose_shape","mouth",
-          "makeup_base","eyebrows","lip_eye"
+          "makeup_base","eyebrows","lip_eye",
+          "allure"
         ),
 
         measurements: flat("bust","waist","hip"),
@@ -765,6 +785,7 @@
         clothing: [
           ...get("costume"),
           ...get("outfit_fit"),
+          ...get("lingerie"),
           ...get("headwear"),
           ...get("jewelry"),
           ...get("hands"),
@@ -776,9 +797,9 @@
           ...get("socks")
         ].filter(Boolean),
 
-        action: flat("pose","activity"),
+        action: flat("pose","activity","sexy_pose"),
 
-        scene: flat("location","time","weather"),
+        scene: flat("location","boudoir","time","weather"),
         sceneDetail: flat("props","detail","texture"),
 
         lighting: get("lighting")[0] || "",
@@ -786,7 +807,7 @@
         camera: flat("lens","aperture","composition","shot","angle"),
         shot: get("shot")[0] || "",
 
-        style: flat("style","effects"),
+        style: flat("style","effects","glamour"),
 
         ratio: get("ratio")[0] || "",
         expressionRaw: get("expression")[0] || ""
@@ -934,19 +955,20 @@
         "expression","eye_color","eye_shape",
         "face_shape","forehead","cheeks","chin",
         "ears","nose_shape","mouth",
-        "makeup_base","eyebrows","lip_eye"
+        "makeup_base","eyebrows","lip_eye",
+        "allure"
       ).join("、");
       const clothing   = flatZh(
-        "costume","outfit_fit","headwear","jewelry","hands","bag","outerwear",
+        "costume","outfit_fit","lingerie","headwear","jewelry","hands","bag","outerwear",
         "top","top_color","top_material","top_pattern",
         "bottom","bottom_color","bottom_material","bottom_pattern",
         "shoes","socks"
       ).join("、");
-      const action     = flatZh("pose","activity").join("、");
-      const scene      = flatZh("location","time","weather").join("、");
+      const action     = flatZh("pose","activity","sexy_pose").join("、");
+      const scene      = flatZh("location","boudoir","time","weather").join("、");
       const sceneDetail= flatZh("props","detail","texture").join("、");
       const camera     = flatZh("lens","aperture","composition","shot","angle").join("、");
-      const style      = flatZh("style","effects").join("、");
+      const style      = flatZh("style","effects","glamour").join("、");
       const lighting   = z(v.lighting);
       const profession = flatZh("profession").join("、");
       const shot       = z(v.shot || "");
@@ -1191,6 +1213,10 @@
       const s = e.target.dataset.safety;
       if (!s) return;
       state.safety = s;
+      // v1.2: 切換到標準/NSFW 時清除未成年年齡選取
+      if (s !== "safe" && isMinorAge(state.values.age)) {
+        delete state.values.age;
+      }
       document.querySelectorAll("#safetyGroup button").forEach(b =>
         b.classList.toggle("active", b.dataset.safety === s)
       );
